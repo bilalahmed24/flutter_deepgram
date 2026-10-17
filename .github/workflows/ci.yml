@@ -52,7 +52,9 @@ jobs:
         run: dart pub get --no-example
 
       - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: >
+          dart format --output=none --set-exit-if-changed
+          $(git ls-files '*.dart' ':(exclude)example')
 
       - name: Static analysis
         run: dart analyze --fatal-infos

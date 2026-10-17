@@ -778,40 +778,6 @@ The SDK runs in the browser with zero changes. Three things to know:
 
 Every streaming factory also accepts `ResilientWebSocketOptions` (`autoReconnect`, `maxReconnectAttempts`, backoff bounds, keepalive, `shouldReconnect`, `onReconnecting`, `onReconnected`) — see [Resilience & gap recovery](#resilience--gap-recovery).
 
-## Testing
-
-The SDK ships with a deterministic, network-free test suite (765 tests, **98.3% line coverage**) built on scriptable WebSocket factories and a queued HTTP client:
-
-```bash
-dart pub get --no-example   # resolve SDK deps (example/ needs the Flutter SDK)
-dart test                                   # all 765 tests
-dart test --coverage=coverage               # with coverage instrumentation
-dart pub global run coverage:format_coverage --lcov \
-  --in=coverage --out=coverage/lcov.info \
-  --report-on=lib --packages=.dart_tool/package_config.json
-python3 tool/coverage.py coverage/lcov.info # per-file + overall summary
-```
-
-The resilience engine itself (failure classification, generation tokens, backoff, keepalive, graceful drain) is covered end-to-end by fake-socket tests in `test/resilient_websocket_test.dart`.
-
-## Migrating from in-app code
-
-If you are extracting an existing in-app Deepgram service (singletons, rxdart subjects, app loggers) into this package, the mapping is:
-
-| In-app pattern | flutter_deepgram equivalent |
-|---|---|
-| `DeepGramService()` singleton | `DeepgramClient(apiKey: ...)` — plain object, create per usage scope, call `close()` when done |
-| `getTranscriptionStream(audioStream)` | `deepgram.createLiveClient()` + `start()`, then `sendAudio(chunk)` per chunk; results via the `results` stream |
-| `onTranscriptReceived` BehaviorSubject | `live.results` broadcast stream (typed `LiveTranscriptionResult`) |
-| `streamRestarted` / `streamClosed` subjects | `live.connectionStates` stream (`open` / `reconnecting` / `closed` / `failed`) |
-| `closeWebsocketStream(forceStop:)` | `live.close()` (graceful, bounded drain) or `live.forceClose()` (immediate, cancels gap recoveries) |
-| Manual KeepAlive timer | Built-in (5 s default; agent sessions use 8 s idle-only automatically) |
-| Hand-rolled reconnect + backoff | `ResilientWebSocketOptions` (`minReconnectDelay`, `maxReconnectDelay`, `shouldReconnect`, `onReconnecting`) |
-| Custom logging (`LoggerService`) | `DeepgramConfig(logger: ...)` with a `DeepgramLogger` sink, or `deepgram.logger.addListener(...)` |
-| Custom config storage | Your concern — pass values into `DeepgramConfig` at construction |
-
-Behavior carried over from that service's production hardening: connect-failure classification with connectivity corroboration, generation tokens that stop superseded reconnect chains, disconnect audio buffering with small-gap socket flush vs large-gap HTTPS recovery (anchored at the disconnect instant), per-recovery cancellation tokens, payload-scaled timeouts, and a bounded wait for in-flight recoveries at graceful close (`LiveGapRecoveryOptions.maxCloseWait`).
-
 ## Troubleshooting / FAQ
 
 <details>
