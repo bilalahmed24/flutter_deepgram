@@ -92,8 +92,9 @@ class _RoutingHttpClient implements HttpClient {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
-      'Unexpected HttpClient member used by the agent tests: '
-      '${invocation.memberName}');
+    'Unexpected HttpClient member used by the agent tests: '
+    '${invocation.memberName}',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -120,14 +121,18 @@ class _AgentConn {
 
   /// Starts pumping inbound frames.
   void pump() {
-    socket.cast<Object>().listen((Object frame) {
-      frames.add(frame);
-      if (_frameWaiters.isNotEmpty) {
-        _frameWaiters.removeAt(0).complete(frame);
-      } else {
-        _pendingFrames.add(frame);
-      }
-    }, onDone: _markDone, onError: (Object _) => _markDone());
+    socket.cast<Object>().listen(
+      (Object frame) {
+        frames.add(frame);
+        if (_frameWaiters.isNotEmpty) {
+          _frameWaiters.removeAt(0).complete(frame);
+        } else {
+          _pendingFrames.add(frame);
+        }
+      },
+      onDone: _markDone,
+      onError: (Object _) => _markDone(),
+    );
   }
 
   /// Resolves with the next frame the SDK sends (already-received frames are
@@ -138,10 +143,14 @@ class _AgentConn {
     }
     final waiter = Completer<Object>();
     _frameWaiters.add(waiter);
-    return waiter.future.timeout(timeout, onTimeout: () {
-      throw TimeoutException(
-          'No frame within $timeout. Frames so far: $frames');
-    });
+    return waiter.future.timeout(
+      timeout,
+      onTimeout: () {
+        throw TimeoutException(
+          'No frame within $timeout. Frames so far: $frames',
+        );
+      },
+    );
   }
 
   /// Resolves once the socket is closed from either side.
@@ -149,8 +158,10 @@ class _AgentConn {
     if (_done) return Future<void>.value();
     final waiter = Completer<void>();
     _doneWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout,
-        onTimeout: () => throw TimeoutException('Socket stayed open.'));
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () => throw TimeoutException('Socket stayed open.'),
+    );
   }
 
   /// Sends a text frame.
@@ -213,9 +224,11 @@ class _LoopbackAgentServer {
     }
     final waiter = Completer<_AgentConn>();
     _connWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout,
-        onTimeout: () =>
-            throw TimeoutException('No connection within $_waitTimeout.'));
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () =>
+          throw TimeoutException('No connection within $_waitTimeout.'),
+    );
   }
 
   /// Shuts the server down.
@@ -229,8 +242,10 @@ class _LoopbackAgentServer {
   Future<void> _handle(HttpRequest request) async {
     try {
       if (WebSocketTransformer.isUpgradeRequest(request)) {
-        final conn =
-            _AgentConn(request, await WebSocketTransformer.upgrade(request));
+        final conn = _AgentConn(
+          request,
+          await WebSocketTransformer.upgrade(request),
+        );
         connections.add(conn);
         conn.pump();
         if (_connWaiters.isNotEmpty) {
@@ -276,10 +291,13 @@ class _Recorder<T> {
   Future<T> get next {
     final waiter = Completer<T>();
     _nextWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout,
-        onTimeout: () =>
-            throw TimeoutException('No event within $_waitTimeout. '
-                'Recorded: $values'));
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () => throw TimeoutException(
+        'No event within $_waitTimeout. '
+        'Recorded: $values',
+      ),
+    );
   }
 
   /// Resolves with the first recorded (or next) event matching [predicate].
@@ -289,11 +307,16 @@ class _Recorder<T> {
     }
     final wait = _PredicateWait<T>(predicate);
     _predicateWaiters.add(wait);
-    return wait.completer.future.timeout(_waitTimeout, onTimeout: () {
-      _predicateWaiters.remove(wait);
-      throw TimeoutException('No matching event within $_waitTimeout. '
-          'Recorded: $values');
-    });
+    return wait.completer.future.timeout(
+      _waitTimeout,
+      onTimeout: () {
+        _predicateWaiters.remove(wait);
+        throw TimeoutException(
+          'No matching event within $_waitTimeout. '
+          'Recorded: $values',
+        );
+      },
+    );
   }
 
   /// Resolves once [n] matching events have been recorded.
@@ -301,11 +324,16 @@ class _Recorder<T> {
     if (_countOf(predicate) >= n) return Future<void>.value();
     final wait = _CountWait<T>(n, predicate);
     _countWaiters.add(wait);
-    return wait.completer.future.timeout(_waitTimeout, onTimeout: () {
-      _countWaiters.remove(wait);
-      throw TimeoutException('Only ${_countOf(predicate)} of $n matching '
-          'events within $_waitTimeout. Recorded: $values');
-    });
+    return wait.completer.future.timeout(
+      _waitTimeout,
+      onTimeout: () {
+        _countWaiters.remove(wait);
+        throw TimeoutException(
+          'Only ${_countOf(predicate)} of $n matching '
+          'events within $_waitTimeout. Recorded: $values',
+        );
+      },
+    );
   }
 
   /// Stops recording.
@@ -365,16 +393,16 @@ class _Harness {
   }
 
   static DeepgramConfig _agentConfig() => DeepgramConfig(
-        apiKey: 'test-api-key',
-        baseUrl: _agentTestHost,
-        agentBaseUrl: _agentTestHost,
-        useTls: false,
-        requestTimeout: const Duration(seconds: 2),
-        connectTimeout: const Duration(seconds: 2),
-        maxRetries: 2,
-        retryBaseDelay: const Duration(milliseconds: 1),
-        retryMaxDelay: const Duration(milliseconds: 5),
-      );
+    apiKey: 'test-api-key',
+    baseUrl: _agentTestHost,
+    agentBaseUrl: _agentTestHost,
+    useTls: false,
+    requestTimeout: const Duration(seconds: 2),
+    connectTimeout: const Duration(seconds: 2),
+    maxRetries: 2,
+    retryBaseDelay: const Duration(milliseconds: 1),
+    retryMaxDelay: const Duration(milliseconds: 5),
+  );
 
   /// The loopback server.
   final _LoopbackAgentServer server;
@@ -559,8 +587,9 @@ void main() {
         '3.5',
       );
       expect(
-        AgentAgentThinking.fromJson(<String, dynamic>{'content': false})
-            .content,
+        AgentAgentThinking.fromJson(<String, dynamic>{
+          'content': false,
+        }).content,
         '',
       );
       expect(AgentAgentThinking.fromJson(<String, dynamic>{}).content, '');
@@ -765,10 +794,7 @@ void main() {
         AgentInjectionRefused.fromJson(<String, dynamic>{'message': 7}).message,
         '7',
       );
-      expect(
-        AgentInjectionRefused.fromJson(<String, dynamic>{}).message,
-        '',
-      );
+      expect(AgentInjectionRefused.fromJson(<String, dynamic>{}).message, '');
     });
 
     test('AgentErrorEvent parses description and code', () {
@@ -844,8 +870,9 @@ void main() {
 
     test('malformed function_calls never crash', () {
       expect(
-        AgentHistoryEvent.fromJson(<String, dynamic>{'function_calls': 'x'})
-            .functionCalls,
+        AgentHistoryEvent.fromJson(<String, dynamic>{
+          'function_calls': 'x',
+        }).functionCalls,
         isNull,
       );
       expect(
@@ -891,8 +918,9 @@ void main() {
         'PromptUpdated',
         'SettingsApplied',
       ]) {
-        final event =
-            AgentProviderUpdate.fromJson(<String, dynamic>{'type': kind});
+        final event = AgentProviderUpdate.fromJson(<String, dynamic>{
+          'type': kind,
+        });
         expect(event.kind, kind, reason: kind);
       }
     });
@@ -940,18 +968,21 @@ void main() {
         <dynamic>[1, 'two'],
       );
       expect(
-        AgentCustomThinkPayload.fromJson(<String, dynamic>{'content': 'raw'})
-            .content,
+        AgentCustomThinkPayload.fromJson(<String, dynamic>{
+          'content': 'raw',
+        }).content,
         'raw',
       );
       expect(
-        AgentCustomThinkPayload.fromJson(<String, dynamic>{'content': 12.5})
-            .content,
+        AgentCustomThinkPayload.fromJson(<String, dynamic>{
+          'content': 12.5,
+        }).content,
         12.5,
       );
       expect(
-        AgentCustomThinkPayload.fromJson(<String, dynamic>{'content': null})
-            .content,
+        AgentCustomThinkPayload.fromJson(<String, dynamic>{
+          'content': null,
+        }).content,
         isNull,
       );
     });
@@ -962,53 +993,55 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('client message wire shapes', () {
-    test('handshake sends Settings right after Welcome, with Token auth',
-        () async {
-      final server = await _LoopbackAgentServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
+    test(
+      'handshake sends Settings right after Welcome, with Token auth',
+      () async {
+        final server = await _LoopbackAgentServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
 
-      final connFuture = server.nextConnection();
-      final agent = DeepgramVoiceAgent(
-        config: harness.config,
-        auth: harness.auth,
-        http: harness.httpEngine,
-      );
-      addTearDown(agent.forceClose);
+        final connFuture = server.nextConnection();
+        final agent = DeepgramVoiceAgent(
+          config: harness.config,
+          auth: harness.auth,
+          http: harness.httpEngine,
+        );
+        addTearDown(agent.forceClose);
 
-      final welcome = _Recorder<AgentWelcome>(agent.welcome);
-      addTearDown(welcome.dispose);
-      final applied = _Recorder<void>(agent.settingsApplied);
-      addTearDown(applied.dispose);
+        final welcome = _Recorder<AgentWelcome>(agent.welcome);
+        addTearDown(welcome.dispose);
+        final applied = _Recorder<void>(agent.settingsApplied);
+        addTearDown(applied.dispose);
 
-      final startFuture = agent.start(_defaultSettings);
-      final conn = await connFuture;
+        final startFuture = agent.start(_defaultSettings);
+        final conn = await connFuture;
 
-      // The upgrade request hits the agent endpoint with Token auth.
-      expect(conn.request.uri.path, '/v1/agent/converse');
-      expect(conn.request.uri.query, '');
-      expect(
-        conn.request.headers.value(HttpHeaders.authorizationHeader),
-        'Token test-api-key',
-      );
-      // The shared HTTP engine is exposed for advanced use cases.
-      expect(agent.http, same(harness.httpEngine));
+        // The upgrade request hits the agent endpoint with Token auth.
+        expect(conn.request.uri.path, '/v1/agent/converse');
+        expect(conn.request.uri.query, '');
+        expect(
+          conn.request.headers.value(HttpHeaders.authorizationHeader),
+          'Token test-api-key',
+        );
+        // The shared HTTP engine is exposed for advanced use cases.
+        expect(agent.http, same(harness.httpEngine));
 
-      // Nothing is sent before the Welcome frame.
-      conn.sendJson(<String, dynamic>{
-        'type': 'Welcome',
-        'request_id': 'req-wire',
-      });
-      final settingsFrame = _decode(await conn.nextFrame());
-      expect(settingsFrame, _defaultSettings.toJson());
-      conn.sendJson(<String, dynamic>{'type': 'SettingsApplied'});
-      await startFuture;
+        // Nothing is sent before the Welcome frame.
+        conn.sendJson(<String, dynamic>{
+          'type': 'Welcome',
+          'request_id': 'req-wire',
+        });
+        final settingsFrame = _decode(await conn.nextFrame());
+        expect(settingsFrame, _defaultSettings.toJson());
+        conn.sendJson(<String, dynamic>{'type': 'SettingsApplied'});
+        await startFuture;
 
-      expect(welcome.values, hasLength(1));
-      expect(welcome.values.first.requestId, 'req-wire');
-      expect(applied.values, hasLength(1));
-      expect(conn.frames, hasLength(1));
-    });
+        expect(welcome.values, hasLength(1));
+        expect(welcome.values.first.requestId, 'req-wire');
+        expect(applied.values, hasLength(1));
+        expect(conn.frames, hasLength(1));
+      },
+    );
 
     test('UpdateListen wraps the listen block under `listen`', () async {
       final server = await _LoopbackAgentServer.start();
@@ -1016,16 +1049,18 @@ void main() {
       final harness = _Harness(server);
       final (conn, agent) = await harness.startSession();
 
-      agent.updateListen(const AgentListen(
-        provider: AgentListenProvider.v2(
-          model: 'flux-general-multi',
-          languageHints: <String>['en', 'es'],
-          eotThreshold: 0.8,
-          eagerEotThreshold: 0.6,
-          eotTimeoutMs: 3000,
-          keyterms: <String>['Deepgram'],
+      agent.updateListen(
+        const AgentListen(
+          provider: AgentListenProvider.v2(
+            model: 'flux-general-multi',
+            languageHints: <String>['en', 'es'],
+            eotThreshold: 0.8,
+            eagerEotThreshold: 0.6,
+            eotTimeoutMs: 3000,
+            keyterms: <String>['Deepgram'],
+          ),
         ),
-      ));
+      );
       expect(_decode(await conn.nextFrame()), <String, dynamic>{
         'type': 'UpdateListen',
         'listen': <String, dynamic>{
@@ -1049,19 +1084,21 @@ void main() {
       final harness = _Harness(server);
       final (conn, agent) = await harness.startSession();
 
-      agent.updateThink(AgentThink(
-        provider: AgentThinkProvider.anthropic(
-          model: 'claude-sonnet-4-20250514',
-          temperature: 0.3,
-        ),
-        prompt: 'You are now a travel agent.',
-        functions: const <AgentFunctionDefinition>[
-          AgentFunctionDefinition.client(
-            name: 'book_hotel',
-            description: 'Book a hotel room.',
+      agent.updateThink(
+        AgentThink(
+          provider: AgentThinkProvider.anthropic(
+            model: 'claude-sonnet-4-20250514',
+            temperature: 0.3,
           ),
-        ],
-      ));
+          prompt: 'You are now a travel agent.',
+          functions: const <AgentFunctionDefinition>[
+            AgentFunctionDefinition.client(
+              name: 'book_hotel',
+              description: 'Book a hotel room.',
+            ),
+          ],
+        ),
+      );
       expect(_decode(await conn.nextFrame()), <String, dynamic>{
         'type': 'UpdateThink',
         'think': <String, dynamic>{
@@ -1088,13 +1125,15 @@ void main() {
       final harness = _Harness(server);
       final (conn, agent) = await harness.startSession();
 
-      agent.updateSpeak(const AgentSpeak(
-        provider: AgentSpeakProvider(
-          model: 'aura-2-apollo-en',
-          version: 'v1',
-          speed: 1.2,
+      agent.updateSpeak(
+        const AgentSpeak(
+          provider: AgentSpeakProvider(
+            model: 'aura-2-apollo-en',
+            version: 'v1',
+            speed: 1.2,
+          ),
         ),
-      ));
+      );
       expect(_decode(await conn.nextFrame()), <String, dynamic>{
         'type': 'UpdateSpeak',
         'speak': <String, dynamic>{
@@ -1142,8 +1181,10 @@ void main() {
 
       agent.injectAgentMessage('Please hold.');
       agent.injectAgentMessage('You are caller number 2.', behavior: 'queue');
-      agent.injectAgentMessage('Stop! A table opened up.',
-          behavior: 'interrupt');
+      agent.injectAgentMessage(
+        'Stop! A table opened up.',
+        behavior: 'interrupt',
+      );
 
       expect(_decode(await conn.nextFrame()), <String, dynamic>{
         'type': 'InjectAgentMessage',
@@ -1238,20 +1279,23 @@ void main() {
       expect(second as List<int>, <int>[255, 0, 128]);
     });
 
-    test('KeepAlive fires after 8 s idle with the exact documented frame',
-        () async {
-      final server = await _LoopbackAgentServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final (conn, agent) = await harness.startSession();
+    test(
+      'KeepAlive fires after 8 s idle with the exact documented frame',
+      () async {
+        final server = await _LoopbackAgentServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final (conn, agent) = await harness.startSession();
 
-      // The agent mandates one {"type":"KeepAlive"} every 8 s while idle.
-      final frame = await conn.nextFrame(
-        timeout: const Duration(seconds: 15),
-      );
-      expect(frame, isA<String>());
-      expect(_decode(frame), <String, dynamic>{'type': 'KeepAlive'});
-    }, timeout: const Timeout(Duration(seconds: 20)));
+        // The agent mandates one {"type":"KeepAlive"} every 8 s while idle.
+        final frame = await conn.nextFrame(
+          timeout: const Duration(seconds: 15),
+        );
+        expect(frame, isA<String>());
+        expect(_decode(frame), <String, dynamic>{'type': 'KeepAlive'});
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -1283,25 +1327,27 @@ void main() {
       expect(event.raw['type'], 'ConversationText');
     });
 
-    test('UserStartedSpeaking and AgentAudioDone fire their void streams',
-        () async {
-      final server = await _LoopbackAgentServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final (conn, agent) = await harness.startSession();
+    test(
+      'UserStartedSpeaking and AgentAudioDone fire their void streams',
+      () async {
+        final server = await _LoopbackAgentServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final (conn, agent) = await harness.startSession();
 
-      final userStarted = _Recorder<void>(agent.userStartedSpeaking);
-      addTearDown(userStarted.dispose);
-      final audioDone = _Recorder<void>(agent.agentAudioDone);
-      addTearDown(audioDone.dispose);
+        final userStarted = _Recorder<void>(agent.userStartedSpeaking);
+        addTearDown(userStarted.dispose);
+        final audioDone = _Recorder<void>(agent.agentAudioDone);
+        addTearDown(audioDone.dispose);
 
-      conn.sendJson(<String, dynamic>{'type': 'UserStartedSpeaking'});
-      await userStarted.next;
-      expect(userStarted.values, hasLength(1));
-      conn.sendJson(<String, dynamic>{'type': 'AgentAudioDone'});
-      await audioDone.next;
-      expect(audioDone.values, hasLength(1));
-    });
+        conn.sendJson(<String, dynamic>{'type': 'UserStartedSpeaking'});
+        await userStarted.next;
+        expect(userStarted.values, hasLength(1));
+        conn.sendJson(<String, dynamic>{'type': 'AgentAudioDone'});
+        await audioDone.next;
+        expect(audioDone.values, hasLength(1));
+      },
+    );
 
     test('AgentThinking events carry the thought content', () async {
       final server = await _LoopbackAgentServer.start();
@@ -1326,8 +1372,9 @@ void main() {
       final harness = _Harness(server);
       final (conn, agent) = await harness.startSession();
 
-      final events =
-          _Recorder<AgentAgentStartedSpeaking>(agent.agentStartedSpeaking);
+      final events = _Recorder<AgentAgentStartedSpeaking>(
+        agent.agentStartedSpeaking,
+      );
       addTearDown(events.dispose);
 
       conn.sendJson(<String, dynamic>{
@@ -1377,8 +1424,9 @@ void main() {
       final harness = _Harness(server);
       final (conn, agent) = await harness.startSession();
 
-      final events =
-          _Recorder<AgentFunctionCallRequest>(agent.functionCallRequests);
+      final events = _Recorder<AgentFunctionCallRequest>(
+        agent.functionCallRequests,
+      );
       addTearDown(events.dispose);
 
       conn.sendJson(<String, dynamic>{
@@ -1406,8 +1454,9 @@ void main() {
       final harness = _Harness(server);
       final (conn, agent) = await harness.startSession();
 
-      final events =
-          _Recorder<AgentFunctionCallCancelled>(agent.functionCallCancelled);
+      final events = _Recorder<AgentFunctionCallCancelled>(
+        agent.functionCallCancelled,
+      );
       addTearDown(events.dispose);
 
       conn.sendJson(<String, dynamic>{
@@ -1459,46 +1508,48 @@ void main() {
       expect(warning.code, 'NET_WARNING');
     });
 
-    test('History events reach the history stream (text + function calls)',
-        () async {
-      final server = await _LoopbackAgentServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final (conn, agent) = await harness.startSession();
+    test(
+      'History events reach the history stream (text + function calls)',
+      () async {
+        final server = await _LoopbackAgentServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final (conn, agent) = await harness.startSession();
 
-      final events = _Recorder<AgentHistoryEvent>(agent.history);
-      addTearDown(events.dispose);
+        final events = _Recorder<AgentHistoryEvent>(agent.history);
+        addTearDown(events.dispose);
 
-      conn.sendJson(<String, dynamic>{
-        'type': 'History',
-        'role': 'assistant',
-        'content': 'Your table is ready.',
-      });
-      final text = await events.next;
-      expect(text.role, 'assistant');
-      expect(text.content, 'Your table is ready.');
-      expect(text.functionCalls, isNull);
+        conn.sendJson(<String, dynamic>{
+          'type': 'History',
+          'role': 'assistant',
+          'content': 'Your table is ready.',
+        });
+        final text = await events.next;
+        expect(text.role, 'assistant');
+        expect(text.content, 'Your table is ready.');
+        expect(text.functionCalls, isNull);
 
-      conn.sendJson(<String, dynamic>{
-        'type': 'History',
-        'function_calls': <dynamic>[
-          <String, dynamic>{
-            'id': 'call-5',
-            'name': 'reserve',
-            'arguments': '{"party":2}',
-            'response': '{"ok":true}',
-            'client_side': true,
-          },
-        ],
-      });
-      final calls = await events.next;
-      expect(calls.role, isNull);
-      expect(calls.content, isNull);
-      expect(calls.functionCalls, hasLength(1));
-      expect(calls.functionCalls!.first.name, 'reserve');
-      expect(calls.functionCalls!.first.response, '{"ok":true}');
-      expect(calls.functionCalls!.first.clientSide, isTrue);
-    });
+        conn.sendJson(<String, dynamic>{
+          'type': 'History',
+          'function_calls': <dynamic>[
+            <String, dynamic>{
+              'id': 'call-5',
+              'name': 'reserve',
+              'arguments': '{"party":2}',
+              'response': '{"ok":true}',
+              'client_side': true,
+            },
+          ],
+        });
+        final calls = await events.next;
+        expect(calls.role, isNull);
+        expect(calls.content, isNull);
+        expect(calls.functionCalls, hasLength(1));
+        expect(calls.functionCalls!.first.name, 'reserve');
+        expect(calls.functionCalls!.first.response, '{"ok":true}');
+        expect(calls.functionCalls!.first.clientSide, isTrue);
+      },
+    );
 
     test('provider updates surface on providerUpdates', () async {
       final server = await _LoopbackAgentServer.start();
@@ -1539,8 +1590,9 @@ void main() {
       final harness = _Harness(server);
       final (conn, agent) = await harness.startSession();
 
-      final payloads =
-          _Recorder<AgentCustomThinkPayload>(agent.customThinkProviderMessages);
+      final payloads = _Recorder<AgentCustomThinkPayload>(
+        agent.customThinkProviderMessages,
+      );
       addTearDown(payloads.dispose);
 
       conn.sendJson(<String, dynamic>{
@@ -1551,23 +1603,25 @@ void main() {
       expect(payload.content, <String, dynamic>{'provider': 'says', 'n': 3});
     });
 
-    test('binary frames feed the audio stream; empty ones are dropped',
-        () async {
-      final server = await _LoopbackAgentServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final (conn, agent) = await harness.startSession();
+    test(
+      'binary frames feed the audio stream; empty ones are dropped',
+      () async {
+        final server = await _LoopbackAgentServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final (conn, agent) = await harness.startSession();
 
-      final audio = _Recorder<List<int>>(agent.audio);
-      addTearDown(audio.dispose);
+        final audio = _Recorder<List<int>>(agent.audio);
+        addTearDown(audio.dispose);
 
-      conn.sendBytes(<int>[10, 20, 30]);
-      expect(await audio.next, <int>[10, 20, 30]);
+        conn.sendBytes(<int>[10, 20, 30]);
+        expect(await audio.next, <int>[10, 20, 30]);
 
-      conn.sendBytes(<int>[]);
-      await _quiet();
-      expect(audio.values, hasLength(1));
-    });
+        conn.sendBytes(<int>[]);
+        await _quiet();
+        expect(audio.values, hasLength(1));
+      },
+    );
 
     test('unknown types are ignored without breaking the pump', () async {
       final server = await _LoopbackAgentServer.start();
@@ -1576,8 +1630,9 @@ void main() {
       final harness = _Harness(server);
       final (conn, agent) = await harness.startSession(logger: logger);
 
-      final conversation =
-          _Recorder<AgentConversationText>(agent.conversationText);
+      final conversation = _Recorder<AgentConversationText>(
+        agent.conversationText,
+      );
       addTearDown(conversation.dispose);
 
       conn.sendJson(<String, dynamic>{'type': 'SpaceAliens', 'beam': 'up'});
@@ -1603,30 +1658,32 @@ void main() {
       expect((await conversation.next).content, 'Still here.');
     });
 
-    test('malformed JSON text frames surface as SchemaError warnings',
-        () async {
-      final server = await _LoopbackAgentServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final (conn, agent) = await harness.startSession();
+    test(
+      'malformed JSON text frames surface as SchemaError warnings',
+      () async {
+        final server = await _LoopbackAgentServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final (conn, agent) = await harness.startSession();
 
-      final warnings = _Recorder<AgentWarningEvent>(agent.warnings);
-      addTearDown(warnings.dispose);
+        final warnings = _Recorder<AgentWarningEvent>(agent.warnings);
+        addTearDown(warnings.dispose);
 
-      conn.sendText('{not valid json');
-      final warning = await warnings.next;
-      expect(warning.code, 'SchemaError');
-      expect(warning.description, contains('Malformed JSON frame'));
+        conn.sendText('{not valid json');
+        final warning = await warnings.next;
+        expect(warning.code, 'SchemaError');
+        expect(warning.description, contains('Malformed JSON frame'));
 
-      // Non-object JSON payloads are rejected the same way.
-      conn.sendText('[1, 2, 3]');
-      final second = await warnings.next;
-      expect(second.code, 'SchemaError');
-      expect(second.description, 'Expected a JSON object frame.');
+        // Non-object JSON payloads are rejected the same way.
+        conn.sendText('[1, 2, 3]');
+        final second = await warnings.next;
+        expect(second.code, 'SchemaError');
+        expect(second.description, 'Expected a JSON object frame.');
 
-      // The session survives.
-      expect(agent.isConnected, isTrue);
-    });
+        // The session survives.
+        expect(agent.isConnected, isTrue);
+      },
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -1648,8 +1705,10 @@ void main() {
       addTearDown(agent.forceClose);
 
       await expectLater(
-        agent.start(_defaultSettings,
-            handshakeTimeout: const Duration(milliseconds: 250)),
+        agent.start(
+          _defaultSettings,
+          handshakeTimeout: const Duration(milliseconds: 250),
+        ),
         throwsA(isA<DeepgramTimeoutException>()),
       );
       // The connection was accepted; the server simply stayed silent.
@@ -1669,8 +1728,10 @@ void main() {
       );
       addTearDown(agent.forceClose);
 
-      final startFuture = agent.start(_defaultSettings,
-          handshakeTimeout: const Duration(milliseconds: 250));
+      final startFuture = agent.start(
+        _defaultSettings,
+        handshakeTimeout: const Duration(milliseconds: 250),
+      );
       final conn = await connFuture;
       conn.sendJson(<String, dynamic>{
         'type': 'Welcome',
@@ -1678,10 +1739,7 @@ void main() {
       });
       // The Settings frame is sent, but no confirmation follows.
       await conn.nextFrame();
-      await expectLater(
-        startFuture,
-        throwsA(isA<DeepgramTimeoutException>()),
-      );
+      await expectLater(startFuture, throwsA(isA<DeepgramTimeoutException>()));
     });
 
     test('an Error frame after Welcome fails the handshake', () async {
@@ -1711,17 +1769,19 @@ void main() {
       });
       await expectLater(
         startFuture,
-        throwsA(isA<DeepgramWebSocketException>()
-            .having(
-              (DeepgramWebSocketException error) => error.message,
-              'message',
-              'Invalid speak provider.',
-            )
-            .having(
-              (DeepgramWebSocketException error) => error.code,
-              'code',
-              'SETTINGS_INVALID',
-            )),
+        throwsA(
+          isA<DeepgramWebSocketException>()
+              .having(
+                (DeepgramWebSocketException error) => error.message,
+                'message',
+                'Invalid speak provider.',
+              )
+              .having(
+                (DeepgramWebSocketException error) => error.code,
+                'code',
+                'SETTINGS_INVALID',
+              ),
+        ),
       );
     });
 
@@ -1733,16 +1793,17 @@ void main() {
 
       await expectLater(
         agent.start(_defaultSettings),
-        throwsA(isA<DeepgramStateException>().having(
-          (DeepgramStateException error) => error.message,
-          'message',
-          contains('already active'),
-        )),
+        throwsA(
+          isA<DeepgramStateException>().having(
+            (DeepgramStateException error) => error.message,
+            'message',
+            contains('already active'),
+          ),
+        ),
       );
     });
 
-    test(
-        'close() drains until the server hangs up, then releases every '
+    test('close() drains until the server hangs up, then releases every '
         'stream; idempotent', () async {
       final server = await _LoopbackAgentServer.start();
       addTearDown(server.shutdown);
@@ -1754,8 +1815,11 @@ void main() {
       // the server side shortly after the drain begins — like the real
       // Deepgram agent server does at session end — so the wait resolves.
       final closing = agent.close();
-      unawaited(Future<void>.delayed(const Duration(milliseconds: 100))
-          .then((_) => conn.socket.close(1000, 'session complete')));
+      unawaited(
+        Future<void>.delayed(
+          const Duration(milliseconds: 100),
+        ).then((_) => conn.socket.close(1000, 'session complete')),
+      );
       await closing;
 
       // Every stream controller is closed: late listeners see done.
@@ -1770,93 +1834,100 @@ void main() {
       // A fresh session is refused after the close.
       await expectLater(
         agent.start(_defaultSettings),
-        throwsA(isA<DeepgramStateException>().having(
-          (DeepgramStateException error) => error.message,
-          'message',
-          'This voice agent has been closed.',
-        )),
+        throwsA(
+          isA<DeepgramStateException>().having(
+            (DeepgramStateException error) => error.message,
+            'message',
+            'This voice agent has been closed.',
+          ),
+        ),
       );
     });
 
-    test('forceClose() tears down immediately and swallows later sends',
-        () async {
-      final server = await _LoopbackAgentServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final (conn, agent) = await harness.startSession();
+    test(
+      'forceClose() tears down immediately and swallows later sends',
+      () async {
+        final server = await _LoopbackAgentServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final (conn, agent) = await harness.startSession();
 
-      await agent.forceClose();
-      expect(agent.isConnected, isFalse);
-      await expectLater(agent.welcome, emitsDone);
-      await expectLater(conn.done, completes);
+        await agent.forceClose();
+        expect(agent.isConnected, isFalse);
+        await expectLater(agent.welcome, emitsDone);
+        await expectLater(conn.done, completes);
 
-      // Sends after the close are no-ops, never throws.
-      agent.sendAudio(<int>[9, 9]);
-      agent.updatePrompt('ignored');
-      await _quiet();
-      expect(conn.frames, hasLength(1)); // only the handshake Settings
+        // Sends after the close are no-ops, never throws.
+        agent.sendAudio(<int>[9, 9]);
+        agent.updatePrompt('ignored');
+        await _quiet();
+        expect(conn.frames, hasLength(1)); // only the handshake Settings
 
-      await agent.forceClose();
-    });
+        await agent.forceClose();
+      },
+    );
 
-    test('an unexpected drop reconnects, re-Welcomes, and re-sends Settings',
-        () async {
-      final server = await _LoopbackAgentServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
+    test(
+      'an unexpected drop reconnects, re-Welcomes, and re-sends Settings',
+      () async {
+        final server = await _LoopbackAgentServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
 
-      DeepgramVoiceAgent? agentSlot;
-      final userCallbackOrder = <String>[];
-      final wsOptions = ResilientWebSocketOptions(
-        // Long enough to observe the in-flight reconnect attempt
-        // deterministically before the redial lands.
-        minReconnectDelay: const Duration(milliseconds: 150),
-        maxReconnectDelay: const Duration(milliseconds: 150),
-        onReconnected: () {
-          userCallbackOrder.add('user');
-          agentSlot?.updatePrompt('user callback ran first');
-        },
-      );
+        DeepgramVoiceAgent? agentSlot;
+        final userCallbackOrder = <String>[];
+        final wsOptions = ResilientWebSocketOptions(
+          // Long enough to observe the in-flight reconnect attempt
+          // deterministically before the redial lands.
+          minReconnectDelay: const Duration(milliseconds: 150),
+          maxReconnectDelay: const Duration(milliseconds: 150),
+          onReconnected: () {
+            userCallbackOrder.add('user');
+            agentSlot?.updatePrompt('user callback ran first');
+          },
+        );
 
-      // Subscribe before the handshake so both Welcome frames are captured
-      // (broadcast streams do not replay past events).
-      late final _Recorder<AgentWelcome> welcomes;
-      late final _Recorder<WsConnectionState> states;
-      final (conn1, agent) = await harness.startSession(
-        wsOptions: wsOptions,
-        onCreated: (DeepgramVoiceAgent created) {
-          agentSlot = created;
-          welcomes = _Recorder<AgentWelcome>(created.welcome);
-          states = _Recorder<WsConnectionState>(created.connectionStates);
-        },
-      );
-      addTearDown(welcomes.dispose);
-      addTearDown(states.dispose);
+        // Subscribe before the handshake so both Welcome frames are captured
+        // (broadcast streams do not replay past events).
+        late final _Recorder<AgentWelcome> welcomes;
+        late final _Recorder<WsConnectionState> states;
+        final (conn1, agent) = await harness.startSession(
+          wsOptions: wsOptions,
+          onCreated: (DeepgramVoiceAgent created) {
+            agentSlot = created;
+            welcomes = _Recorder<AgentWelcome>(created.welcome);
+            states = _Recorder<WsConnectionState>(created.connectionStates);
+          },
+        );
+        addTearDown(welcomes.dispose);
+        addTearDown(states.dispose);
 
-      // Drop the first connection; the socket reconnects after its backoff.
-      final conn2Future = server.nextConnection();
-      await conn1.drop();
-      await states.waitFor(
-          (WsConnectionState state) => state == WsConnectionState.reconnecting);
-      // The reconnect attempt is observable while it is in flight.
-      expect(agent.reconnectAttempts, 1);
-      final conn2 = await conn2Future;
-      conn2.sendJson(<String, dynamic>{
-        'type': 'Welcome',
-        'request_id': 'req-reconnect',
-      });
+        // Drop the first connection; the socket reconnects after its backoff.
+        final conn2Future = server.nextConnection();
+        await conn1.drop();
+        await states.waitFor(
+          (WsConnectionState state) => state == WsConnectionState.reconnecting,
+        );
+        // The reconnect attempt is observable while it is in flight.
+        expect(agent.reconnectAttempts, 1);
+        final conn2 = await conn2Future;
+        conn2.sendJson(<String, dynamic>{
+          'type': 'Welcome',
+          'request_id': 'req-reconnect',
+        });
 
-      // The user callback runs BEFORE the Settings re-send.
-      final promptFrame = _decode(await conn2.nextFrame());
-      expect(promptFrame, <String, dynamic>{
-        'type': 'UpdatePrompt',
-        'prompt': 'user callback ran first',
-      });
-      expect(_decode(await conn2.nextFrame()), _defaultSettings.toJson());
-      expect(userCallbackOrder, <String>['user']);
-      expect(welcomes.values, hasLength(2));
-      expect(welcomes.values.last.requestId, 'req-reconnect');
-      expect(agent.isConnected, isTrue);
-    });
+        // The user callback runs BEFORE the Settings re-send.
+        final promptFrame = _decode(await conn2.nextFrame());
+        expect(promptFrame, <String, dynamic>{
+          'type': 'UpdatePrompt',
+          'prompt': 'user callback ran first',
+        });
+        expect(_decode(await conn2.nextFrame()), _defaultSettings.toJson());
+        expect(userCallbackOrder, <String>['user']);
+        expect(welcomes.values, hasLength(2));
+        expect(welcomes.values.last.requestId, 'req-reconnect');
+        expect(agent.isConnected, isTrue);
+      },
+    );
   });
 }

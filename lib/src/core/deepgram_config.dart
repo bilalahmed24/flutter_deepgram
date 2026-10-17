@@ -48,9 +48,9 @@ class DeepgramConfig {
     this.probeUrl,
     this.logger,
   }) : assert(
-          apiKey != null || jwt != null,
-          'Provide an apiKey or a jwt (or use DeepgramClient.withTokenProvider).',
-        );
+         apiKey != null || jwt != null,
+         'Provide an apiKey or a jwt (or use DeepgramClient.withTokenProvider).',
+       );
 
   /// Creates a configuration pointing at a [DeepgramRegion].
   factory DeepgramConfig.region(
@@ -127,7 +127,11 @@ class DeepgramConfig {
   /// Builds a REST URI for [path] (e.g. `/v1/listen`).
   Uri restUri(String path, [Map<String, dynamic>? query]) {
     return _buildUri(
-        scheme: restScheme, host: baseUrl, path: path, query: query);
+      scheme: restScheme,
+      host: baseUrl,
+      path: path,
+      query: query,
+    );
   }
 
   /// Builds a WebSocket URI for [path] on the media host.
@@ -138,7 +142,11 @@ class DeepgramConfig {
   /// Builds a WebSocket URI for [path] on the Voice Agent host.
   Uri agentWsUri(String path, [Map<String, dynamic>? query]) {
     return _buildUri(
-        scheme: wsScheme, host: agentBaseUrl, path: path, query: query);
+      scheme: wsScheme,
+      host: agentBaseUrl,
+      path: path,
+      query: query,
+    );
   }
 
   /// Returns a copy with the given fields replaced.

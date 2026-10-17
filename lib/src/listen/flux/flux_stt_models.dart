@@ -17,11 +17,11 @@ class FluxWord {
 
   /// Parses a `TurnInfo` word entry.
   factory FluxWord.fromJson(Map<String, dynamic> json) => FluxWord(
-        word: _asString(json['word']),
-        confidence: _asDouble(json['confidence'], 0),
-        start: _asNullableDouble(json['start']),
-        end: _asNullableDouble(json['end']),
-      );
+    word: _asString(json['word']),
+    confidence: _asDouble(json['confidence'], 0),
+    start: _asNullableDouble(json['start']),
+    end: _asNullableDouble(json['end']),
+  );
 
   /// The punctuated, properly-cased word.
   final String word;
@@ -136,9 +136,9 @@ class FluxConnected {
 
   /// Parses a `Connected` message.
   factory FluxConnected.fromJson(Map<String, dynamic> json) => FluxConnected(
-        requestId: _asString(json['request_id']),
-        sequenceId: _asInt(json['sequence_id'], 0),
-      );
+    requestId: _asString(json['request_id']),
+    sequenceId: _asInt(json['sequence_id'], 0),
+  );
 
   /// Unique request id of the session.
   final String requestId;
@@ -236,11 +236,11 @@ class FluxWarning {
 
   /// Parses a `Warning` message.
   factory FluxWarning.fromJson(Map<String, dynamic> json) => FluxWarning(
-        requestId: _asString(json['request_id']),
-        sequenceId: _asInt(json['sequence_id'], 0),
-        code: _asString(json['code']),
-        description: _asString(json['description']),
-      );
+    requestId: _asString(json['request_id']),
+    sequenceId: _asInt(json['sequence_id'], 0),
+    code: _asString(json['code']),
+    description: _asString(json['description']),
+  );
 
   /// Unique request id of the session.
   final String requestId;
@@ -269,11 +269,11 @@ class FluxFatalError {
 
   /// Parses an `Error` message.
   factory FluxFatalError.fromJson(Map<String, dynamic> json) => FluxFatalError(
-        requestId: _asStringOrNull(json['request_id']),
-        sequenceId: _asIntOrNull(json['sequence_id']),
-        code: _asString(json['code']),
-        description: _asString(json['description']),
-      );
+    requestId: _asStringOrNull(json['request_id']),
+    sequenceId: _asIntOrNull(json['sequence_id']),
+    code: _asString(json['code']),
+    description: _asString(json['description']),
+  );
 
   /// Unique request id of the session, when the server provided one.
   final String? requestId;

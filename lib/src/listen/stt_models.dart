@@ -43,10 +43,7 @@ Map<String, dynamic>? _asMap(dynamic v) {
 List<dynamic>? _asList(dynamic v) => _cast<List<dynamic>>(v);
 
 /// Parses a list of JSON objects with [parse], skipping non-object entries.
-List<T>? _parseList<T>(
-  dynamic v,
-  T Function(Map<String, dynamic> json) parse,
-) {
+List<T>? _parseList<T>(dynamic v, T Function(Map<String, dynamic> json) parse) {
   final list = _asList(v);
   if (list == null) return null;
   final result = <T>[];
@@ -162,11 +159,7 @@ class SttWord {
 /// A summary covering a span of the transcript.
 class SttSummary {
   /// Creates a summary.
-  const SttSummary({
-    required this.summary,
-    this.startWord,
-    this.endWord,
-  });
+  const SttSummary({required this.summary, this.startWord, this.endWord});
 
   /// Parses a summary from its Deepgram JSON representation.
   factory SttSummary.fromJson(Map<String, dynamic> json) {
@@ -411,10 +404,7 @@ class SttHit {
 /// A transcript translated into a single target language.
 class SttTranslation {
   /// Creates a translation.
-  const SttTranslation({
-    required this.language,
-    required this.translation,
-  });
+  const SttTranslation({required this.language, required this.translation});
 
   /// Parses a translation from its Deepgram JSON representation.
   factory SttTranslation.fromJson(Map<String, dynamic> json) {
@@ -479,7 +469,7 @@ class SttParagraph {
     return SttParagraph(
       sentences:
           _parseList<SttSentence>(json['sentences'], SttSentence.fromJson) ??
-              const <SttSentence>[],
+          const <SttSentence>[],
       numWords: _asInt(json['num_words']) ?? 0,
       start: _asDouble(json['start']) ?? 0.0,
       end: _asDouble(json['end']) ?? 0.0,
@@ -524,18 +514,25 @@ class SttAlternative {
     return SttAlternative(
       transcript: _asStr(json['transcript']) ?? '',
       confidence: _asDouble(json['confidence']),
-      words: _parseList<SttWord>(json['words'], SttWord.fromJson) ??
+      words:
+          _parseList<SttWord>(json['words'], SttWord.fromJson) ??
           const <SttWord>[],
       paragraphs: _parseParagraphs(json['paragraphs']),
-      summaries:
-          _parseOneOrMany<SttSummary>(json['summaries'], SttSummary.fromJson),
+      summaries: _parseOneOrMany<SttSummary>(
+        json['summaries'],
+        SttSummary.fromJson,
+      ),
       sentiments: _parseOneOrMany<SttSentiment>(
-          json['sentiments'], SttSentiment.fromJson),
+        json['sentiments'],
+        SttSentiment.fromJson,
+      ),
       topics: _parseList<SttTopic>(json['topics'], SttTopic.fromJson),
       intents: _parseOneOrMany<SttIntent>(json['intents'], SttIntent.fromJson),
       entities: _parseList<SttEntity>(json['entities'], SttEntity.fromJson),
       translations: _parseList<SttTranslation>(
-          json['translations'], SttTranslation.fromJson),
+        json['translations'],
+        SttTranslation.fromJson,
+      ),
     );
   }
 
@@ -596,8 +593,11 @@ class SttChannel {
   /// Parses a channel from its Deepgram JSON representation.
   factory SttChannel.fromJson(Map<String, dynamic> json) {
     return SttChannel(
-      alternatives: _parseList<SttAlternative>(
-              json['alternatives'], SttAlternative.fromJson) ??
+      alternatives:
+          _parseList<SttAlternative>(
+            json['alternatives'],
+            SttAlternative.fromJson,
+          ) ??
           const <SttAlternative>[],
       detectedLanguage: _asStr(json['detected_language']),
       languageCode: _asStr(json['language_code']),
@@ -751,8 +751,9 @@ class SttMetadata {
       modelInfo: _parseModelInfo(json['model_info']),
       models: _stringList(json['models']),
       modelUuid: _asStr(json['model_uuid']),
-      diarizeInfo:
-          diarizeMap == null ? null : SttDiarizeInfo.fromJson(diarizeMap),
+      diarizeInfo: diarizeMap == null
+          ? null
+          : SttDiarizeInfo.fromJson(diarizeMap),
       additionalModelUuids: _stringList(json['additional_model_uuids']),
       extra: _asMap(json['extra']),
     );
@@ -826,27 +827,36 @@ class SttUtterance {
   /// Parses an utterance from its Deepgram JSON representation.
   factory SttUtterance.fromJson(Map<String, dynamic> json) {
     var sentiments = _parseOneOrMany<SttSentiment>(
-        json['sentiments'], SttSentiment.fromJson);
-    sentiments ??=
-        _parseOneOrMany<SttSentiment>(json['sentiment'], SttSentiment.fromJson);
+      json['sentiments'],
+      SttSentiment.fromJson,
+    );
+    sentiments ??= _parseOneOrMany<SttSentiment>(
+      json['sentiment'],
+      SttSentiment.fromJson,
+    );
     return SttUtterance(
       start: _asDouble(json['start']),
       end: _asDouble(json['end']),
       confidence: _asDouble(json['confidence']),
       transcript: _asStr(json['transcript']) ?? '',
-      words: _parseList<SttWord>(json['words'], SttWord.fromJson) ??
+      words:
+          _parseList<SttWord>(json['words'], SttWord.fromJson) ??
           const <SttWord>[],
       speaker: _asInt(json['speaker']),
       id: _asStr(json['id']),
       channel: _asInt(json['channel']),
-      summaries:
-          _parseOneOrMany<SttSummary>(json['summaries'], SttSummary.fromJson),
+      summaries: _parseOneOrMany<SttSummary>(
+        json['summaries'],
+        SttSummary.fromJson,
+      ),
       sentiments: sentiments,
       topics: _parseOneOrMany<SttTopic>(json['topics'], SttTopic.fromJson),
       intents: _parseOneOrMany<SttIntent>(json['intents'], SttIntent.fromJson),
       entities: _parseList<SttEntity>(json['entities'], SttEntity.fromJson),
       translations: _parseList<SttTranslation>(
-          json['translations'], SttTranslation.fromJson),
+        json['translations'],
+        SttTranslation.fromJson,
+      ),
       detector: _asStr(json['detector']),
     );
   }
@@ -942,17 +952,25 @@ class PrerecordedTranscriptionResult {
       metadata: SttMetadata.fromJson(metadataJson),
       channels:
           _parseList<SttChannel>(results['channels'], SttChannel.fromJson) ??
-              const <SttChannel>[],
+          const <SttChannel>[],
       utterances: _parseList<SttUtterance>(
-          results['utterances'], SttUtterance.fromJson),
+        results['utterances'],
+        SttUtterance.fromJson,
+      ),
       summary: _parseSummary(results['summary']),
       summaries: _parseOneOrMany<SttSummary>(
-          results['summaries'], SttSummary.fromJson),
+        results['summaries'],
+        SttSummary.fromJson,
+      ),
       sentiments: _parseSegments<SttSentiment>(
-          results['sentiments'], SttSentiment.fromJson),
+        results['sentiments'],
+        SttSentiment.fromJson,
+      ),
       topics: _parseSegments<SttTopic>(results['topics'], SttTopic.fromJson),
-      intents:
-          _parseSegments<SttIntent>(results['intents'], SttIntent.fromJson),
+      intents: _parseSegments<SttIntent>(
+        results['intents'],
+        SttIntent.fromJson,
+      ),
       translations: _parseTranslations(results['translations']),
     );
   }

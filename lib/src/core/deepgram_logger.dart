@@ -8,11 +8,8 @@ library;
 /// Signature for a log listener.
 ///
 /// [level] is one of `debug`, `info`, `warn`, `error`.
-typedef DeepgramLogListener = void Function(
-  String level,
-  String message,
-  Object? error,
-);
+typedef DeepgramLogListener =
+    void Function(String level, String message, Object? error);
 
 /// Pluggable logger for the Deepgram SDK.
 ///

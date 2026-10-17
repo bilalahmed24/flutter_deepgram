@@ -44,9 +44,9 @@ class DeepgramLiveClient {
     ResilientWebSocketOptions? wsOptions,
     this.gapRecovery = const LiveGapRecoveryOptions(),
     DeepgramLogger? logger,
-  })  : _http = http,
-        _options = options,
-        _logger = logger ?? DeepgramLogger() {
+  }) : _http = http,
+       _options = options,
+       _logger = logger ?? DeepgramLogger() {
     _ws = ResilientWebSocket(
       uri: config.wsUri('/v1/listen', options?.toQuery()),
       config: config,
@@ -284,29 +284,35 @@ class DeepgramLiveClient {
     if (text == null || text.isEmpty) return;
     final decoded = _tryDecode(text);
     if (decoded == null) {
-      _emitError(LiveErrorMessage(
-        variant: 'ParseError',
-        description: 'Received a frame that is not valid JSON.',
-        message: text,
-      ));
+      _emitError(
+        LiveErrorMessage(
+          variant: 'ParseError',
+          description: 'Received a frame that is not valid JSON.',
+          message: text,
+        ),
+      );
       return;
     }
     if (decoded is! Map) {
-      _emitError(LiveErrorMessage(
-        variant: 'ParseError',
-        description: 'Received a frame that is not a JSON object.',
-        message: text,
-      ));
+      _emitError(
+        LiveErrorMessage(
+          variant: 'ParseError',
+          description: 'Received a frame that is not a JSON object.',
+          message: text,
+        ),
+      );
       return;
     }
     final frame = _stringMap(decoded);
     final rawType = frame['type'];
     if (rawType is! String) {
-      _emitError(LiveErrorMessage(
-        variant: 'ParseError',
-        description: 'Received a frame without a message type.',
-        message: text,
-      ));
+      _emitError(
+        LiveErrorMessage(
+          variant: 'ParseError',
+          description: 'Received a frame without a message type.',
+          message: text,
+        ),
+      );
       return;
     }
     switch (rawType) {
@@ -351,8 +357,10 @@ class DeepgramLiveClient {
         );
         break;
       default:
-        _logger.debug('Ignoring unknown message type from /v1/listen: '
-            '$rawType');
+        _logger.debug(
+          'Ignoring unknown message type from /v1/listen: '
+          '$rawType',
+        );
         break;
     }
   }
@@ -368,11 +376,13 @@ class DeepgramLiveClient {
       if (!controller.isClosed) controller.add(event);
     } catch (error) {
       _logger.warn('Malformed $type message from /v1/listen.', error);
-      _emitError(LiveErrorMessage(
-        variant: 'ParseError',
-        description: 'Malformed $type message from /v1/listen.',
-        message: raw,
-      ));
+      _emitError(
+        LiveErrorMessage(
+          variant: 'ParseError',
+          description: 'Malformed $type message from /v1/listen.',
+          message: raw,
+        ),
+      );
     }
   }
 
@@ -479,8 +489,8 @@ class DeepgramLiveClient {
     _recoveryChain = _recoveryChain
         .then((_) => _recoverGapViaHttps(gap, anchor))
         .catchError((Object error) {
-      _logger.warn('Unexpected failure in the gap-recovery chain.', error);
-    });
+          _logger.warn('Unexpected failure in the gap-recovery chain.', error);
+        });
   }
 
   Future<void> _recoverGapViaHttps(List<int> gap, DateTime anchorUtc) async {

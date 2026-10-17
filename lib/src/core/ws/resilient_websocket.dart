@@ -206,16 +206,16 @@ class ResilientWebSocket {
     WsFactory? wsFactory,
     ConnectivityProbe? probe,
     DeepgramLogger? logger,
-  })  : _uri = uri,
-        _auth = auth,
-        _options = options,
-        _factory = wsFactory ?? defaultWsFactory,
-        _probe = probe ?? ConnectivityProbe(probeUrl: config.effectiveProbeUrl),
-        _logger = logger ?? DeepgramLogger(),
-        _backoff = BackoffPolicy(
-          baseDelay: options.minReconnectDelay,
-          maxDelay: options.maxReconnectDelay,
-        );
+  }) : _uri = uri,
+       _auth = auth,
+       _options = options,
+       _factory = wsFactory ?? defaultWsFactory,
+       _probe = probe ?? ConnectivityProbe(probeUrl: config.effectiveProbeUrl),
+       _logger = logger ?? DeepgramLogger(),
+       _backoff = BackoffPolicy(
+         baseDelay: options.minReconnectDelay,
+         maxDelay: options.maxReconnectDelay,
+       );
 
   final Uri _uri;
   final DeepgramAuth _auth;
@@ -413,9 +413,11 @@ class ResilientWebSocket {
 
   Future<void> _connectOnce(int generation) async {
     _teardownKeepAlive();
-    _setState(_reconnectAttempts > 0
-        ? WsConnectionState.reconnecting
-        : WsConnectionState.connecting);
+    _setState(
+      _reconnectAttempts > 0
+          ? WsConnectionState.reconnecting
+          : WsConnectionState.connecting,
+    );
     final authHeader = await _auth.authorizationHeader();
     final socket = await _factory.connect(
       _uri,
@@ -526,8 +528,9 @@ class ResilientWebSocket {
     final callback = _options.shouldReconnect;
     // Default policy: stop only on repeated definitive refusals with a
     // healthy internet (e.g. bad credentials); retry everything else.
-    final policySaysStop =
-        callback != null ? !callback(ctx) : corroboratedDefinitive;
+    final policySaysStop = callback != null
+        ? !callback(ctx)
+        : corroboratedDefinitive;
     if (policySaysStop) {
       _logger.error(
         'Giving up after $_reconnectAttempts attempts '
@@ -539,12 +542,14 @@ class ResilientWebSocket {
 
     final delay = _backoff.delayFor(_reconnectAttempts);
     _setState(WsConnectionState.reconnecting);
-    _options.onReconnecting?.call(WsReconnectContext(
-      attempt: _reconnectAttempts,
-      nextDelay: delay,
-      classification: classification,
-      internetUp: internetUp,
-    ));
+    _options.onReconnecting?.call(
+      WsReconnectContext(
+        attempt: _reconnectAttempts,
+        nextDelay: delay,
+        classification: classification,
+        internetUp: internetUp,
+      ),
+    );
     await Future<void>.delayed(delay);
     return _generation != generation || _userClosed;
   }
@@ -592,10 +597,9 @@ class ResilientWebSocket {
 
     final delay = _backoff.delayFor(_reconnectAttempts);
     _setState(WsConnectionState.reconnecting);
-    _options.onReconnecting?.call(WsReconnectContext(
-      attempt: _reconnectAttempts,
-      nextDelay: delay,
-    ));
+    _options.onReconnecting?.call(
+      WsReconnectContext(attempt: _reconnectAttempts, nextDelay: delay),
+    );
     await Future<void>.delayed(delay);
     return _generation != generation || _userClosed;
   }
@@ -603,22 +607,18 @@ class ResilientWebSocket {
   void _startKeepAlive() {
     _teardownKeepAlive();
     if (_options.keepAliveInterval == Duration.zero) return;
-    _keepAliveTimer = Timer.periodic(
-      _options.keepAliveInterval,
-      (_) {
-        if (!_isSocketOpen()) return;
-        if (_options.sendKeepAliveOnlyWhenIdle) {
-          final last = _lastOutboundAt;
-          final sinceLast =
-              last == null ? null : DateTime.now().difference(last);
-          // Recent outbound traffic already keeps the session alive.
-          if (sinceLast != null && sinceLast < _options.keepAliveInterval) {
-            return;
-          }
+    _keepAliveTimer = Timer.periodic(_options.keepAliveInterval, (_) {
+      if (!_isSocketOpen()) return;
+      if (_options.sendKeepAliveOnlyWhenIdle) {
+        final last = _lastOutboundAt;
+        final sinceLast = last == null ? null : DateTime.now().difference(last);
+        // Recent outbound traffic already keeps the session alive.
+        if (sinceLast != null && sinceLast < _options.keepAliveInterval) {
+          return;
         }
-        send(_options.keepAliveMessage);
-      },
-    );
+      }
+      send(_options.keepAliveMessage);
+    });
   }
 
   void _teardownKeepAlive() {

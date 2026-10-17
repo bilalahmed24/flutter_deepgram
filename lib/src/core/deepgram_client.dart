@@ -45,16 +45,14 @@ class DeepgramClient {
   /// Any [config] provided supplies non-credential settings (region,
   /// timeouts, retry policy); its credentials are replaced by [apiKey].
   DeepgramClient({required String apiKey, DeepgramConfig? config})
-      : this.withConfig(
-          (config ?? const DeepgramConfig(apiKey: '')).copyWith(apiKey: apiKey),
-        );
+    : this.withConfig(
+        (config ?? const DeepgramConfig(apiKey: '')).copyWith(apiKey: apiKey),
+      );
 
   /// Creates a client from a full [config].
-  DeepgramClient.withConfig(
-    this.config, {
-    DeepgramTokenProvider? tokenProvider,
-  })  : logger = config.logger ?? DeepgramLogger(),
-        auth = DeepgramAuth(config, tokenProvider: tokenProvider) {
+  DeepgramClient.withConfig(this.config, {DeepgramTokenProvider? tokenProvider})
+    : logger = config.logger ?? DeepgramLogger(),
+      auth = DeepgramAuth(config, tokenProvider: tokenProvider) {
     _http = HttpEngine(config: config, auth: auth);
   }
 
@@ -67,10 +65,12 @@ class DeepgramClient {
     required DeepgramTokenProvider tokenProvider,
     DeepgramConfig? config,
   }) : this.withConfig(
-          (config ?? const DeepgramConfig(apiKey: '', jwt: ''))
-              .copyWith(apiKey: '', jwt: ''),
-          tokenProvider: tokenProvider,
-        );
+         (config ?? const DeepgramConfig(apiKey: '', jwt: '')).copyWith(
+           apiKey: '',
+           jwt: '',
+         ),
+         tokenProvider: tokenProvider,
+       );
 
   /// The configuration this client was built from.
   final DeepgramConfig config;
@@ -191,9 +191,7 @@ class DeepgramClient {
 
   /// Creates a Voice Agent session
   /// (`wss://agent.deepgram.com/v1/agent/converse`).
-  DeepgramVoiceAgent createVoiceAgent({
-    ResilientWebSocketOptions? wsOptions,
-  }) {
+  DeepgramVoiceAgent createVoiceAgent({ResilientWebSocketOptions? wsOptions}) {
     _ensureOpen();
     return DeepgramVoiceAgent(
       config: config,

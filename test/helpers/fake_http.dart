@@ -10,7 +10,8 @@ import 'package:http/http.dart' as http;
 /// Thrown by [QueueHttpClient] when a test forgets to enqueue a response.
 class NoResponseQueued implements Exception {
   @override
-  String toString() => 'NoResponseQueued: the test did not enqueue enough '
+  String toString() =>
+      'NoResponseQueued: the test did not enqueue enough '
       'responses for the requests the SDK made.';
 }
 

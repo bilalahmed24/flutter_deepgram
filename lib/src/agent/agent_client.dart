@@ -47,11 +47,11 @@ class DeepgramVoiceAgent {
     required HttpEngine http,
     ResilientWebSocketOptions? wsOptions,
     DeepgramLogger? logger,
-  })  : _config = config,
-        _auth = auth,
-        _http = http,
-        _userWsOptions = wsOptions,
-        _logger = logger ?? DeepgramLogger();
+  }) : _config = config,
+       _auth = auth,
+       _http = http,
+       _userWsOptions = wsOptions,
+       _logger = logger ?? DeepgramLogger();
 
   final DeepgramConfig _config;
   final DeepgramAuth _auth;
@@ -95,17 +95,17 @@ class DeepgramVoiceAgent {
   final StreamController<AgentAgentThinking> _agentThinkingController =
       StreamController<AgentAgentThinking>.broadcast();
   final StreamController<AgentAgentStartedSpeaking>
-      _agentStartedSpeakingController =
+  _agentStartedSpeakingController =
       StreamController<AgentAgentStartedSpeaking>.broadcast();
   final StreamController<void> _agentAudioDoneController =
       StreamController<void>.broadcast();
   final StreamController<AgentLatencyReport> _latencyReportsController =
       StreamController<AgentLatencyReport>.broadcast();
   final StreamController<AgentFunctionCallRequest>
-      _functionCallRequestsController =
+  _functionCallRequestsController =
       StreamController<AgentFunctionCallRequest>.broadcast();
   final StreamController<AgentFunctionCallCancelled>
-      _functionCallCancelledController =
+  _functionCallCancelledController =
       StreamController<AgentFunctionCallCancelled>.broadcast();
   final StreamController<AgentInjectionRefused> _injectionRefusedController =
       StreamController<AgentInjectionRefused>.broadcast();
@@ -118,7 +118,7 @@ class DeepgramVoiceAgent {
   final StreamController<String> _providerUpdatesController =
       StreamController<String>.broadcast();
   final StreamController<AgentCustomThinkPayload>
-      _customThinkProviderMessagesController =
+  _customThinkProviderMessagesController =
       StreamController<AgentCustomThinkPayload>.broadcast();
   final StreamController<List<int>> _audioController =
       StreamController<List<int>>.broadcast();
@@ -226,7 +226,8 @@ class DeepgramVoiceAgent {
         current == WsConnectionState.connecting ||
         current == WsConnectionState.reconnecting) {
       throw const DeepgramStateException(
-          'A voice agent session is already active; close it first.');
+        'A voice agent session is already active; close it first.',
+      );
     }
 
     _settings = settings;
@@ -238,8 +239,9 @@ class DeepgramVoiceAgent {
     _welcomeCompleter = welcomeCompleter;
     _settingsAppliedCompleter = appliedCompleter;
 
-    _logger
-        .debug('Connecting to ${_config.agentWsUri('/v1/agent/converse')}...');
+    _logger.debug(
+      'Connecting to ${_config.agentWsUri('/v1/agent/converse')}...',
+    );
 
     // Subscribe to the states BEFORE connecting so the `open` event cannot
     // be missed; bail out on `failed`.
@@ -257,11 +259,13 @@ class DeepgramVoiceAgent {
         state = await stateCompleter.future.timeout(handshakeTimeout);
       } on TimeoutException {
         throw const DeepgramTimeoutException(
-            'Timed out waiting for the voice agent connection to open.');
+          'Timed out waiting for the voice agent connection to open.',
+        );
       }
       if (state != WsConnectionState.open) {
         throw const DeepgramWebSocketException(
-            'Could not open the voice agent connection.');
+          'Could not open the voice agent connection.',
+        );
       }
     } finally {
       unawaited(stateSub.cancel());
@@ -272,7 +276,8 @@ class DeepgramVoiceAgent {
       await welcomeCompleter.future.timeout(handshakeTimeout);
     } on TimeoutException {
       throw const DeepgramTimeoutException(
-          'Timed out waiting for the Welcome message.');
+        'Timed out waiting for the Welcome message.',
+      );
     }
     _logger.debug('Welcome received; sending Settings.');
 
@@ -283,7 +288,8 @@ class DeepgramVoiceAgent {
       await appliedCompleter.future.timeout(handshakeTimeout);
     } on TimeoutException {
       throw const DeepgramTimeoutException(
-          'Timed out waiting for the SettingsApplied confirmation.');
+        'Timed out waiting for the SettingsApplied confirmation.',
+      );
     }
 
     _handshakeCompleted = true;
@@ -329,33 +335,31 @@ class DeepgramVoiceAgent {
   /// Updates the listen (STT) provider mid-session. The model and language
   /// can change, as can keyterms and the Flux end-of-turn thresholds.
   void updateListen(AgentListen listen) => _sendJson(<String, dynamic>{
-        'type': 'UpdateListen',
-        'listen': listen.toJson(),
-      });
+    'type': 'UpdateListen',
+    'listen': listen.toJson(),
+  });
 
   /// Updates the think (LLM) provider mid-session.
   void updateThink(AgentThink think) => _sendJson(<String, dynamic>{
-        'type': 'UpdateThink',
-        'think': think.toJson(),
-      });
+    'type': 'UpdateThink',
+    'think': think.toJson(),
+  });
 
   /// Updates the speak (TTS) provider mid-session.
   void updateSpeak(AgentSpeak speak) => _sendJson(<String, dynamic>{
-        'type': 'UpdateSpeak',
-        'speak': speak.toJson(),
-      });
+    'type': 'UpdateSpeak',
+    'speak': speak.toJson(),
+  });
 
   /// Replaces the system prompt for the rest of the session.
-  void updatePrompt(String prompt) => _sendJson(<String, dynamic>{
-        'type': 'UpdatePrompt',
-        'prompt': prompt,
-      });
+  void updatePrompt(String prompt) =>
+      _sendJson(<String, dynamic>{'type': 'UpdatePrompt', 'prompt': prompt});
 
   /// Adds a synthetic user turn the agent reacts to.
   void injectUserMessage(String content) => _sendJson(<String, dynamic>{
-        'type': 'InjectUserMessage',
-        'content': content,
-      });
+    'type': 'InjectUserMessage',
+    'content': content,
+  });
 
   /// Makes the agent speak [message]. The [behavior] controls how the
   /// injection interacts with any in-progress turn; allowed values are
@@ -375,26 +379,23 @@ class DeepgramVoiceAgent {
     required String id,
     required String name,
     required String content,
-  }) =>
-      _sendJson(<String, dynamic>{
-        'type': 'FunctionCallResponse',
-        'id': id,
-        'name': name,
-        'content': content,
-      });
+  }) => _sendJson(<String, dynamic>{
+    'type': 'FunctionCallResponse',
+    'id': id,
+    'name': name,
+    'content': content,
+  });
 
   /// Forces the end of the current user turn (e.g. when end-of-turn
   /// detection is suppressed with `eot_threshold: 1.0`).
-  void forceEndTurn() => _sendJson(<String, dynamic>{
-        'type': 'ForceEndTurn',
-      });
+  void forceEndTurn() => _sendJson(<String, dynamic>{'type': 'ForceEndTurn'});
 
   /// Sends an arbitrary JSON value to the think provider, unvalidated. Use
   /// with [customThinkProviderMessages] to echo provider responses.
   void sendCustomToThinkProvider(Object content) => _sendJson(<String, dynamic>{
-        'type': '__customToThinkProvider',
-        'content': content,
-      });
+    'type': '__customToThinkProvider',
+    'content': content,
+  });
 
   // ---------------------------------------------------------------------
   // Internals
@@ -429,8 +430,9 @@ class DeepgramVoiceAgent {
     if (_closed || !_handshakeCompleted) return;
     final settings = _settings;
     if (settings == null) return;
-    _logger
-        .info('Reconnected: re-sending Settings for the fresh agent session.');
+    _logger.info(
+      'Reconnected: re-sending Settings for the fresh agent session.',
+    );
     _ws.send(jsonEncode(settings.toJson()));
   }
 
@@ -633,8 +635,10 @@ class DeepgramVoiceAgent {
     final event = AgentErrorEvent.fromJson(json);
     if (!_errorsController.isClosed) _errorsController.add(event);
     _logger.error('Agent error ${event.code}: ${event.description}');
-    final exception =
-        DeepgramWebSocketException(event.description, code: event.code);
+    final exception = DeepgramWebSocketException(
+      event.description,
+      code: event.code,
+    );
     // Fail an in-flight handshake, if any. Only the completer whose stage
     // `start()` is currently awaiting is completed with the error; the
     // other (if any) is marked ignored so it can never leak an unhandled
@@ -671,7 +675,8 @@ class DeepgramVoiceAgent {
     _logger.warn(description);
     if (!_warningsController.isClosed) {
       _warningsController.add(
-          AgentWarningEvent(description: description, code: 'SchemaError'));
+        AgentWarningEvent(description: description, code: 'SchemaError'),
+      );
     }
   }
 

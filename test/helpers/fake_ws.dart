@@ -134,8 +134,9 @@ class FakeWsFactory implements WsFactory {
     if (connectErrors.isNotEmpty) {
       throw connectErrors.removeAt(0);
     }
-    final socket =
-        queuedSockets.isNotEmpty ? queuedSockets.removeAt(0) : FakeWsSocket();
+    final socket = queuedSockets.isNotEmpty
+        ? queuedSockets.removeAt(0)
+        : FakeWsSocket();
     delivered.add(socket);
     return socket;
   }

@@ -74,10 +74,10 @@ class HttpEngine {
     required DeepgramConfig config,
     required DeepgramAuth auth,
     http.Client? client,
-  })  : _config = config,
-        _auth = auth,
-        _client = client ?? http.Client(),
-        _ownsClient = client == null;
+  }) : _config = config,
+       _auth = auth,
+       _client = client ?? http.Client(),
+       _ownsClient = client == null;
 
   final DeepgramConfig _config;
   final DeepgramAuth _auth;
@@ -130,10 +130,7 @@ class HttpEngine {
     return _runJson(
       () async => _client.post(
         _config.restUri(path, query),
-        headers: await _headers(
-          extra: headers,
-          jsonBody: body != null,
-        ),
+        headers: await _headers(extra: headers, jsonBody: body != null),
         body: body == null ? null : jsonEncode(body),
       ),
       cancelToken: cancelToken,
@@ -151,10 +148,7 @@ class HttpEngine {
     return _runJson(
       () async => _client.put(
         _config.restUri(path, query),
-        headers: await _headers(
-          extra: headers,
-          jsonBody: body != null,
-        ),
+        headers: await _headers(extra: headers, jsonBody: body != null),
         body: body == null ? null : jsonEncode(body),
       ),
       cancelToken: cancelToken,
@@ -172,10 +166,7 @@ class HttpEngine {
     return _runJson(
       () async => _client.patch(
         _config.restUri(path, query),
-        headers: await _headers(
-          extra: headers,
-          jsonBody: body != null,
-        ),
+        headers: await _headers(extra: headers, jsonBody: body != null),
         body: body == null ? null : jsonEncode(body),
       ),
       cancelToken: cancelToken,
@@ -193,10 +184,7 @@ class HttpEngine {
     return _runJson(
       () async => _client.delete(
         _config.restUri(path, query),
-        headers: await _headers(
-          extra: headers,
-          jsonBody: body != null,
-        ),
+        headers: await _headers(extra: headers, jsonBody: body != null),
         body: body == null ? null : jsonEncode(body),
       ),
       cancelToken: cancelToken,
@@ -219,10 +207,7 @@ class HttpEngine {
       () async => _client.post(
         _config.restUri(path, query),
         headers: await _headers(
-          extra: {
-            ...?headers,
-            'Content-Type': contentType,
-          },
+          extra: {...?headers, 'Content-Type': contentType},
         ),
         body: audio,
       ),
@@ -272,27 +257,28 @@ class HttpEngine {
       _checkCancelled(cancelToken);
       try {
         final request = http.Request('POST', uri)
-          ..headers.addAll(await _headers(extra: {
-            'Content-Type': 'application/json',
-            ...?headers,
-          }));
+          ..headers.addAll(
+            await _headers(
+              extra: {'Content-Type': 'application/json', ...?headers},
+            ),
+          );
         if (body != null) request.body = jsonEncode(body);
         final response = await _client
             .send(request)
             .timeout(_config.requestTimeout)
             .then((http.StreamedResponse streamed) async {
-          if (streamed.statusCode >= 400) {
-            // Drain the error body so the socket can be reused.
-            final errorBody = await streamed.stream.bytesToString();
-            throw _mapStatusFromParts(
-              streamed.statusCode,
-              errorBody,
-              streamed.headers['retry-after'],
-              requestId: streamed.headers['x-request-id'],
-            );
-          }
-          return streamed;
-        });
+              if (streamed.statusCode >= 400) {
+                // Drain the error body so the socket can be reused.
+                final errorBody = await streamed.stream.bytesToString();
+                throw _mapStatusFromParts(
+                  streamed.statusCode,
+                  errorBody,
+                  streamed.headers['retry-after'],
+                  requestId: streamed.headers['x-request-id'],
+                );
+              }
+              return streamed;
+            });
         return response.stream.map((chunk) {
           _checkCancelled(cancelToken);
           return chunk;
@@ -377,10 +363,7 @@ class HttpEngine {
         if (retryable == null) {
           if (response.statusCode >= 400) {
             // Non-retryable client error: map to a typed exception.
-            throw _mapStatus(
-              response,
-              retryAfter: null,
-            );
+            throw _mapStatus(response, retryAfter: null);
           }
           return response;
         }
@@ -418,8 +401,10 @@ class HttpEngine {
   /// either successful or a non-retryable client error.
   _RetryableFailure? _inspect(http.Response response) {
     if (response.statusCode == 429) {
-      return _RetryableFailure(429,
-          retryAfter: _parseRetryAfterSeconds(response.headers['retry-after']));
+      return _RetryableFailure(
+        429,
+        retryAfter: _parseRetryAfterSeconds(response.headers['retry-after']),
+      );
     }
     if (response.statusCode >= 500) {
       return _RetryableFailure(response.statusCode);
@@ -456,28 +441,50 @@ class HttpEngine {
         retryAfterOverride ?? _parseRetryAfterSeconds(retryAfterHeader);
     switch (statusCode) {
       case 400:
-        return DeepgramBadRequestException(message,
-            requestId: effectiveRequestId, code: code);
+        return DeepgramBadRequestException(
+          message,
+          requestId: effectiveRequestId,
+          code: code,
+        );
       case 401:
       case 403:
-        return DeepgramAuthException(message,
-            requestId: effectiveRequestId, code: code);
+        return DeepgramAuthException(
+          message,
+          requestId: effectiveRequestId,
+          code: code,
+        );
       case 402:
-        return DeepgramQuotaException(message,
-            requestId: effectiveRequestId, code: code);
+        return DeepgramQuotaException(
+          message,
+          requestId: effectiveRequestId,
+          code: code,
+        );
       case 404:
-        return DeepgramNotFoundException(message,
-            requestId: effectiveRequestId, code: code);
+        return DeepgramNotFoundException(
+          message,
+          requestId: effectiveRequestId,
+          code: code,
+        );
       case 429:
-        return DeepgramRateLimitException(message,
-            retryAfter: retryAfter, requestId: effectiveRequestId, code: code);
+        return DeepgramRateLimitException(
+          message,
+          retryAfter: retryAfter,
+          requestId: effectiveRequestId,
+          code: code,
+        );
       default:
         if (statusCode >= 500) {
-          return DeepgramServerException(message,
-              requestId: effectiveRequestId, code: code);
+          return DeepgramServerException(
+            message,
+            requestId: effectiveRequestId,
+            code: code,
+          );
         }
-        return DeepgramException(message,
-            requestId: effectiveRequestId, code: code);
+        return DeepgramException(
+          message,
+          requestId: effectiveRequestId,
+          code: code,
+        );
     }
   }
 
@@ -508,9 +515,7 @@ class HttpEngine {
     final capped = exponential > _config.retryMaxDelay
         ? _config.retryMaxDelay
         : exponential;
-    final jitterMs = _random.nextInt(
-      math.max(1, capped.inMilliseconds ~/ 2),
-    );
+    final jitterMs = _random.nextInt(math.max(1, capped.inMilliseconds ~/ 2));
     return capped + Duration(milliseconds: jitterMs);
   }
 

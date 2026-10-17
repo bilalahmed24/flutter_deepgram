@@ -78,13 +78,11 @@ void main() {
     });
 
     test('falls back to defaults on empty or malformed input', () {
-      final summary = SttSummary.fromJson(
-        const <String, dynamic>{
-          'summary': 42,
-          'start_word': 'a',
-          'end_word': <int>[],
-        },
-      );
+      final summary = SttSummary.fromJson(const <String, dynamic>{
+        'summary': 42,
+        'start_word': 'a',
+        'end_word': <int>[],
+      });
       expect(summary.summary, '');
       expect(summary.startWord, isNull);
       expect(summary.endWord, isNull);
@@ -151,9 +149,11 @@ void main() {
     });
 
     test('skips unusable topic values and defaults to empty text', () {
-      final malformed = SttTopic.fromJson(
-        const <String, dynamic>{'topics': 42, 'text': 9, 'start_word': 'x'},
-      );
+      final malformed = SttTopic.fromJson(const <String, dynamic>{
+        'topics': 42,
+        'text': 9,
+        'start_word': 'x',
+      });
       expect(malformed.topics, '');
       expect(malformed.text, '');
       expect(malformed.startWord, isNull);
@@ -162,7 +162,7 @@ void main() {
         'topics': <dynamic>[
           'Travel',
           42,
-          <String, dynamic>{'topic': 'Food'}
+          <String, dynamic>{'topic': 'Food'},
         ],
       });
       expect(mixed.topics, 'Travel, Food');
@@ -275,9 +275,11 @@ void main() {
     });
 
     test('accepts text as an alias for snippet', () {
-      final hit = SttHit.fromJson(
-        const <String, dynamic>{'text': 'weather', 'start': 1.0, 'end': 1.4},
-      );
+      final hit = SttHit.fromJson(const <String, dynamic>{
+        'text': 'weather',
+        'start': 1.0,
+        'end': 1.4,
+      });
       expect(hit.text, 'weather');
       expect(hit.start, 1.0);
       expect(hit.end, 1.4);
@@ -303,9 +305,10 @@ void main() {
     });
 
     test('falls back to defaults on malformed input', () {
-      final translation = SttTranslation.fromJson(
-        const <String, dynamic>{'language': 1, 'translation': 2},
-      );
+      final translation = SttTranslation.fromJson(const <String, dynamic>{
+        'language': 1,
+        'translation': 2,
+      });
       expect(translation.language, '');
       expect(translation.translation, '');
     });
@@ -345,17 +348,17 @@ void main() {
       expect(paragraph.numWords, 10);
       expect(paragraph.start, 0.0);
       expect(paragraph.end, 2.0);
-      expect(
-        paragraph.sentences.map((s) => s.text).toList(),
-        <String>['One.', 'Two.'],
-      );
+      expect(paragraph.sentences.map((s) => s.text).toList(), <String>[
+        'One.',
+        'Two.',
+      ]);
     });
 
     test('skips non-object sentences and defaults offsets', () {
       final paragraph = SttParagraph.fromJson(const <String, dynamic>{
         'sentences': <dynamic>[
           'skip-me',
-          <String, dynamic>{'text': 'Kept.'}
+          <String, dynamic>{'text': 'Kept.'},
         ],
       });
       expect(paragraph.sentences, hasLength(1));
@@ -402,7 +405,7 @@ void main() {
           <String, dynamic>{
             'summary': 'Neighbors talk.',
             'start_word': 0,
-            'end_word': 10
+            'end_word': 10,
           },
         ],
         'sentiments': <Map<String, dynamic>>[
@@ -425,8 +428,10 @@ void main() {
           <String, dynamic>{'language': 'es', 'translation': 'Sí.'},
         ],
       });
-      expect(alternative.transcript,
-          'Yeah, as as much as, it is worth having a talk.');
+      expect(
+        alternative.transcript,
+        'Yeah, as as much as, it is worth having a talk.',
+      );
       expect(alternative.confidence, 0.9840088);
       expect(alternative.words, hasLength(2));
       expect(alternative.words.first.punctuatedWord, 'Yeah,');
@@ -464,7 +469,7 @@ void main() {
         'intents': <String, dynamic>{'intent': 'i'},
         'words': <dynamic>[
           'skip',
-          <String, dynamic>{'word': 'kept'}
+          <String, dynamic>{'word': 'kept'},
         ],
       });
       // Bare list under `paragraphs` (no wrapper object) is tolerated.
@@ -494,7 +499,7 @@ void main() {
           <String, dynamic>{'transcript': 'First hypothesis.'},
           <String, dynamic>{
             'transcript': 'Second hypothesis.',
-            'confidence': 0.7
+            'confidence': 0.7,
           },
         ],
       });
@@ -517,15 +522,15 @@ void main() {
         'alternatives': <dynamic>[
           42,
           'nope',
-          <String, dynamic>{'transcript': 'kept'}
+          <String, dynamic>{'transcript': 'kept'},
         ],
       });
       expect(channel.alternatives, hasLength(1));
       expect(channel.alternatives.single.transcript, 'kept');
 
-      final notAList = SttChannel.fromJson(
-        const <String, dynamic>{'alternatives': 'none'},
-      );
+      final notAList = SttChannel.fromJson(const <String, dynamic>{
+        'alternatives': 'none',
+      });
       expect(notAList.alternatives, isEmpty);
     });
   });
@@ -593,9 +598,9 @@ void main() {
       expect(empty.hw, isNull);
       expect(empty.speakerLabels, isNull);
 
-      final notAList = SttDiarizeInfo.fromJson(
-        const <String, dynamic>{'speaker_labels': 'nope'},
-      );
+      final notAList = SttDiarizeInfo.fromJson(const <String, dynamic>{
+        'speaker_labels': 'nope',
+      });
       expect(notAList.speakerLabels, isNull);
     });
   });
@@ -638,8 +643,10 @@ void main() {
       expect(metadata.additionalModelUuids, <String>['sum-uuid', 'sent-uuid']);
       expect(metadata.modelInfo?.name, '2-general-nova');
       expect(metadata.modelInfo?.arch, 'nova-2');
-      expect(metadata.diarizeInfo?.modelUuid,
-          '9a1c8b3e-2f44-4c8a-b1d0-example0000');
+      expect(
+        metadata.diarizeInfo?.modelUuid,
+        '9a1c8b3e-2f44-4c8a-b1d0-example0000',
+      );
       expect(metadata.diarizeInfo?.arch, 'v2');
       expect(metadata.extra, containsPair('CustomerID', '12345'));
     });
@@ -681,9 +688,9 @@ void main() {
       });
       expect(metadata.modelInfo, isNull);
 
-      final nonMap = SttMetadata.fromJson(
-        const <String, dynamic>{'model_info': 42},
-      );
+      final nonMap = SttMetadata.fromJson(const <String, dynamic>{
+        'model_info': 42,
+      });
       expect(nonMap.modelInfo, isNull);
     });
 
@@ -712,9 +719,9 @@ void main() {
     });
 
     test('non-map diarize_info is ignored', () {
-      final metadata = SttMetadata.fromJson(
-        const <String, dynamic>{'diarize_info': 'nope'},
-      );
+      final metadata = SttMetadata.fromJson(const <String, dynamic>{
+        'diarize_info': 'nope',
+      });
       expect(metadata.diarizeInfo, isNull);
     });
   });
@@ -793,7 +800,7 @@ void main() {
         ],
         'sentiment': <String, dynamic>{
           'text': 'singular',
-          'sentiment': 'positive'
+          'sentiment': 'positive',
         },
       });
       expect(utterance.sentiments?.single.text, 'plural');
@@ -880,7 +887,7 @@ void main() {
               'segments': <Map<String, dynamic>>[
                 <String, dynamic>{
                   'topics': <String>['Travel'],
-                  'text': 'Yeah...'
+                  'text': 'Yeah...',
                 },
               ],
             },
@@ -890,7 +897,7 @@ void main() {
                   'intents': <Map<String, dynamic>>[
                     <String, dynamic>{
                       'intent': 'ask_question',
-                      'confidence_score': 0.81
+                      'confidence_score': 0.81,
                     },
                   ],
                   'text': 'Yeah...',
@@ -907,8 +914,10 @@ void main() {
 
       final channel = result.channels.single;
       expect(channel.detectedLanguage, 'en');
-      expect(channel.alternatives.single.transcript,
-          'Yeah, as as much as, it is worth a talk.');
+      expect(
+        channel.alternatives.single.transcript,
+        'Yeah, as as much as, it is worth a talk.',
+      );
 
       final utterance = result.utterances?.single;
       expect(utterance?.transcript, 'Utterance text.');
@@ -934,7 +943,7 @@ void main() {
           'results': <String, dynamic>{
             'sentiments': <String, dynamic>{
               'text': 'bare object',
-              'sentiment': 'neutral'
+              'sentiment': 'neutral',
             },
             'topics': <Map<String, dynamic>>[
               <String, dynamic>{'topics': 'Bare', 'text': 'list form'},
@@ -942,7 +951,7 @@ void main() {
             'intents': <Map<String, dynamic>>[
               <String, dynamic>{
                 'intent': 'direct-intent',
-                'confidence_score': 0.5
+                'confidence_score': 0.5,
               },
             ],
           },
@@ -954,11 +963,12 @@ void main() {
     });
 
     test('summary accepts a plain string, then short, then result', () {
-      final plain =
-          PrerecordedTranscriptionResult.fromJson(const <String, dynamic>{
-        'metadata': <String, dynamic>{},
-        'results': <String, dynamic>{'summary': 'Plain string summary.'},
-      });
+      final plain = PrerecordedTranscriptionResult.fromJson(
+        const <String, dynamic>{
+          'metadata': <String, dynamic>{},
+          'results': <String, dynamic>{'summary': 'Plain string summary.'},
+        },
+      );
       expect(plain.summary, 'Plain string summary.');
 
       final shortOnly = PrerecordedTranscriptionResult.fromJson(
@@ -967,7 +977,7 @@ void main() {
           'results': <String, dynamic>{
             'summary': <String, dynamic>{
               'short': 'Short.',
-              'result': 'Result.'
+              'result': 'Result.',
             },
           },
         },
@@ -1063,61 +1073,62 @@ void main() {
   group('real Deepgram pre-recorded payload', () {
     // Verbatim from the pre-recorded API reference (remote file example).
     test('parses the documented spacewalk.wav response', () {
-      final result = PrerecordedTranscriptionResult.fromJson(
-        const <String, dynamic>{
-          'metadata': <String, dynamic>{
-            'channels': 1,
-            'created': '2024-05-12T18:57:13.426Z',
-            'diarize_info': <String, dynamic>{
-              'arch': 'v2',
-              'model_uuid': '9a1c8b3e-2f44-4c8a-b1d0-example0000',
-            },
-            'duration': 25.933313,
-            'model_info': <String, dynamic>{
-              '30089e05-99d1-4376-b32e-c263170674af': <String, dynamic>{
-                'arch': 'nova-2',
-                'name': '2-general-nova',
-                'version': '2024-01-09.29447',
-              },
-            },
-            'models': <String>['30089e05-99d1-4376-b32e-c263170674af'],
-            'request_id': 'a847f427-4ad5-4d67-9b95-db801e58251c',
-            'sha256':
-                '154e291ecfa8be6ab8343560bcc109008fa7853eb5372533e8efdefc9b504c33',
+      final result = PrerecordedTranscriptionResult.fromJson(const <
+        String,
+        dynamic
+      >{
+        'metadata': <String, dynamic>{
+          'channels': 1,
+          'created': '2024-05-12T18:57:13.426Z',
+          'diarize_info': <String, dynamic>{
+            'arch': 'v2',
+            'model_uuid': '9a1c8b3e-2f44-4c8a-b1d0-example0000',
           },
-          'results': <String, dynamic>{
-            'channels': <Map<String, dynamic>>[
-              <String, dynamic>{
-                'alternatives': <Map<String, dynamic>>[
-                  <String, dynamic>{
-                    'confidence': 0.9840088,
-                    'transcript':
-                        "Yeah, as as much as, it's worth having a talk to the neighbors.",
-                    'words': <Map<String, dynamic>>[
-                      <String, dynamic>{
-                        'confidence': 0.9975586,
-                        'end': 0.32,
-                        'speaker': 0,
-                        'speaker_confidence': 0.98,
-                        'start': 0.08,
-                        'word': 'yeah',
-                      },
-                      <String, dynamic>{
-                        'confidence': 0.9862061,
-                        'end': 0.48,
-                        'speaker': 0,
-                        'speaker_confidence': 0.98,
-                        'start': 0.32,
-                        'word': 'as',
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
+          'duration': 25.933313,
+          'model_info': <String, dynamic>{
+            '30089e05-99d1-4376-b32e-c263170674af': <String, dynamic>{
+              'arch': 'nova-2',
+              'name': '2-general-nova',
+              'version': '2024-01-09.29447',
+            },
           },
+          'models': <String>['30089e05-99d1-4376-b32e-c263170674af'],
+          'request_id': 'a847f427-4ad5-4d67-9b95-db801e58251c',
+          'sha256':
+              '154e291ecfa8be6ab8343560bcc109008fa7853eb5372533e8efdefc9b504c33',
         },
-      );
+        'results': <String, dynamic>{
+          'channels': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'alternatives': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'confidence': 0.9840088,
+                  'transcript':
+                      "Yeah, as as much as, it's worth having a talk to the neighbors.",
+                  'words': <Map<String, dynamic>>[
+                    <String, dynamic>{
+                      'confidence': 0.9975586,
+                      'end': 0.32,
+                      'speaker': 0,
+                      'speaker_confidence': 0.98,
+                      'start': 0.08,
+                      'word': 'yeah',
+                    },
+                    <String, dynamic>{
+                      'confidence': 0.9862061,
+                      'end': 0.48,
+                      'speaker': 0,
+                      'speaker_confidence': 0.98,
+                      'start': 0.32,
+                      'word': 'as',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
       expect(result.requestId, 'a847f427-4ad5-4d67-9b95-db801e58251c');
       expect(result.metadata.channels, 1);
       expect(result.metadata.duration, 25.933313);
@@ -1125,8 +1136,10 @@ void main() {
       expect(result.metadata.diarizeInfo?.arch, 'v2');
 
       final alternative = result.channels.single.alternatives.single;
-      expect(alternative.transcript,
-          "Yeah, as as much as, it's worth having a talk to the neighbors.");
+      expect(
+        alternative.transcript,
+        "Yeah, as as much as, it's worth having a talk to the neighbors.",
+      );
       expect(alternative.confidence, 0.9840088);
       expect(alternative.words, hasLength(2));
       expect(alternative.words.first.word, 'yeah');

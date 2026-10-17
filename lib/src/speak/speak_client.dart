@@ -26,7 +26,7 @@ export 'speak_options.dart';
 class TtsClient {
   /// Creates a TTS client bound to the shared [http] engine.
   TtsClient({required HttpEngine http, required DeepgramConfig config})
-      : _http = http;
+    : _http = http;
 
   final HttpEngine _http;
 

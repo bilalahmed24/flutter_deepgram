@@ -65,14 +65,14 @@ class TtsStreamClient {
     SpeakOptions? options,
     ResilientWebSocketOptions? wsOptions,
     DeepgramLogger? logger,
-  })  : _logger = logger ?? config.logger ?? DeepgramLogger(),
-        _ws = ResilientWebSocket(
-          uri: config.wsUri('/v1/speak', options?.toQuery()),
-          config: config,
-          auth: auth,
-          options: wsOptions ?? const ResilientWebSocketOptions(),
-          logger: logger,
-        ) {
+  }) : _logger = logger ?? config.logger ?? DeepgramLogger(),
+       _ws = ResilientWebSocket(
+         uri: config.wsUri('/v1/speak', options?.toQuery()),
+         config: config,
+         auth: auth,
+         options: wsOptions ?? const ResilientWebSocketOptions(),
+         logger: logger,
+       ) {
     _listenForMessages();
   }
 
@@ -138,18 +138,20 @@ class TtsStreamClient {
     // Subscribe to the state stream BEFORE connecting so the open/failed
     // transition can never race the subscription.
     final completion = _ws.states
-        .firstWhere((WsConnectionState state) =>
-            state == WsConnectionState.open ||
-            state == WsConnectionState.failed ||
-            state == WsConnectionState.closed)
+        .firstWhere(
+          (WsConnectionState state) =>
+              state == WsConnectionState.open ||
+              state == WsConnectionState.failed ||
+              state == WsConnectionState.closed,
+        )
         .then<void>((WsConnectionState state) {
-      if (state != WsConnectionState.open) {
-        throw DeepgramWebSocketException(
-          'The /v1/speak WebSocket connection did not open '
-          '(terminal state: ${state.name}).',
-        );
-      }
-    });
+          if (state != WsConnectionState.open) {
+            throw DeepgramWebSocketException(
+              'The /v1/speak WebSocket connection did not open '
+              '(terminal state: ${state.name}).',
+            );
+          }
+        });
     unawaited(_ws.connect());
     return completion;
   }
@@ -247,10 +249,7 @@ class TtsStreamClient {
         }
         switch (rawType) {
           case 'Metadata':
-            _safeAdd(
-              _metadataController,
-              TtsMetadataMessage.fromJson(decoded),
-            );
+            _safeAdd(_metadataController, TtsMetadataMessage.fromJson(decoded));
             break;
           case 'Flushed':
             _handleSequenceId(decoded, _flushedController, 'Flushed');

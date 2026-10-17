@@ -41,16 +41,12 @@ void main() {
       expect(config.restUri('/v1/listen').host, 'api.deepgram.com');
     });
 
-    test(
-        'a non-numeric suffix after the colon is invalid host input and '
+    test('a non-numeric suffix after the colon is invalid host input and '
         'throws FormatException from Uri', () {
       // `host:notaport` is neither a valid host nor a port; the builder
       // passes it through and Uri rejects it loudly (caller error).
       const config = DeepgramConfig(apiKey: 'k', baseUrl: 'localhost:notaport');
-      expect(
-        () => config.restUri('/v1/listen'),
-        throwsFormatException,
-      );
+      expect(() => config.restUri('/v1/listen'), throwsFormatException);
     });
 
     test('query parameters survive alongside a port', () {
@@ -60,8 +56,10 @@ void main() {
     });
 
     test('agent URIs honor the agent host port', () {
-      const config =
-          DeepgramConfig(apiKey: 'k', agentBaseUrl: 'agent.local:9443');
+      const config = DeepgramConfig(
+        apiKey: 'k',
+        agentBaseUrl: 'agent.local:9443',
+      );
       expect(
         config.agentWsUri('/v1/agent/converse').toString(),
         'wss://agent.local:9443/v1/agent/converse',
@@ -72,9 +70,7 @@ void main() {
   group('ConnectivityProbe with injected client', () {
     test('non-positive status code marks the probe red', () async {
       final queue = QueueHttpClient();
-      queue.enqueueRaw(
-        (request) => http.Response('nope', 0, request: request),
-      );
+      queue.enqueueRaw((request) => http.Response('nope', 0, request: request));
       final probe = ConnectivityProbe(
         probeUrl: 'https://probe.test/',
         client: queue,
@@ -97,9 +93,7 @@ void main() {
 
     test('a green response marks the probe green', () async {
       final queue = QueueHttpClient();
-      queue.enqueueRaw(
-        (request) => http.Response('', 204, request: request),
-      );
+      queue.enqueueRaw((request) => http.Response('', 204, request: request));
       final probe = ConnectivityProbe(
         probeUrl: 'https://probe.test/',
         client: queue,
@@ -124,15 +118,12 @@ void main() {
       final queue = QueueHttpClient();
       queue.enqueueJson('<html>gateway error</html>');
       final auth = DeepgramAuth(testConfig);
-      await http.runWithClient(
-        () async {
-          await expectLater(
-            auth.grantTemporaryToken(),
-            throwsA(isA<DeepgramServerException>()),
-          );
-        },
-        () => queue,
-      );
+      await http.runWithClient(() async {
+        await expectLater(
+          auth.grantTemporaryToken(),
+          throwsA(isA<DeepgramServerException>()),
+        );
+      }, () => queue);
     });
   });
 

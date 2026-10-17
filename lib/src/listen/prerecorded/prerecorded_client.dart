@@ -32,8 +32,8 @@ import 'prerecorded_options.dart';
 class PrerecordedClient {
   /// Creates a pre-recorded transcription client.
   PrerecordedClient({required HttpEngine http, required DeepgramConfig config})
-      : _http = http,
-        _config = config;
+    : _http = http,
+      _config = config;
 
   static const String _listenPath = '/v1/listen';
 
@@ -56,9 +56,7 @@ class PrerecordedClient {
     HttpCancelToken? cancelToken,
   }) async {
     if (url.isEmpty) {
-      throw const DeepgramBadRequestException(
-        'url must not be empty.',
-      );
+      throw const DeepgramBadRequestException('url must not be empty.');
     }
     _config.logger?.debug('PrerecordedClient: transcribing remote media.');
     final query = (options ?? const PrerecordedOptions()).toQuery();

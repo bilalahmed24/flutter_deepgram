@@ -93,9 +93,7 @@ void main() {
       expect(TtsCallbackMethod.post.wireName, 'POST');
       expect(TtsCallbackMethod.put.wireName, 'PUT');
       expect(
-        const SpeakOptions(
-          callback: 'https://example.com/hook',
-        ).toQuery(),
+        const SpeakOptions(callback: 'https://example.com/hook').toQuery(),
         <String, dynamic>{'callback': 'https://example.com/hook'},
       );
       expect(
@@ -118,8 +116,7 @@ void main() {
       );
     });
 
-    test(
-        'tag renders as a list for the query builder to expand '
+    test('tag renders as a list for the query builder to expand '
         '(empty list omitted)', () {
       expect(
         const SpeakOptions(tag: <String>['a']).toQuery(),
@@ -129,14 +126,10 @@ void main() {
         const SpeakOptions(tag: <String>[]).toQuery(),
         isNot(contains('tag')),
       );
-      expect(
-        const SpeakOptions().toQuery(),
-        isNot(contains('tag')),
-      );
+      expect(const SpeakOptions().toQuery(), isNot(contains('tag')));
     });
 
-    test(
-        'numeric fields pass through unstringified (the query builder '
+    test('numeric fields pass through unstringified (the query builder '
         'stringifies later)', () {
       final Map<String, dynamic> query = const SpeakOptions(
         sampleRate: 8000,
@@ -162,10 +155,7 @@ void main() {
     test('always carries the required model and the default encoding', () {
       expect(
         const FluxTtsOptions(model: DeepgramVoices.fluxAlexisEn).toQuery(),
-        <String, dynamic>{
-          'model': 'flux-alexis-en',
-          'encoding': 'linear16',
-        },
+        <String, dynamic>{'model': 'flux-alexis-en', 'encoding': 'linear16'},
       );
     });
 
@@ -190,8 +180,7 @@ void main() {
       });
     });
 
-    test(
-        'expressivity passes through the documented -2..2 bounds '
+    test('expressivity passes through the documented -2..2 bounds '
         '(no local validation)', () {
       expect(
         const FluxTtsOptions(model: 'flux-x-en', expressivity: -2).toQuery(),
@@ -221,13 +210,17 @@ void main() {
 
     test('every encoding is selectable for the batch endpoint', () {
       expect(
-        const FluxTtsOptions(model: 'flux-x-en', encoding: TtsEncoding.mp3)
-            .toQuery(),
+        const FluxTtsOptions(
+          model: 'flux-x-en',
+          encoding: TtsEncoding.mp3,
+        ).toQuery(),
         containsPair('encoding', 'mp3'),
       );
       expect(
-        const FluxTtsOptions(model: 'flux-x-en', encoding: TtsEncoding.opus)
-            .toQuery(),
+        const FluxTtsOptions(
+          model: 'flux-x-en',
+          encoding: TtsEncoding.opus,
+        ).toQuery(),
         containsPair('encoding', 'opus'),
       );
     });
@@ -238,10 +231,7 @@ void main() {
         containsPair('mip_opt_out', 'true'),
       );
       expect(
-        const FluxTtsOptions(
-          model: 'flux-x-en',
-          tag: <String>[],
-        ).toQuery(),
+        const FluxTtsOptions(model: 'flux-x-en', tag: <String>[]).toQuery(),
         <String, dynamic>{'model': 'flux-x-en', 'encoding': 'linear16'},
       );
     });
