@@ -7,8 +7,8 @@
 #
 # Matrix note: the package's SDK floor for CONSUMERS is Dart >=3.3.0
 # (web_socket_channel 3.x + dart:js_interop conditional import, see
-# pubspec.yaml). The CI matrix floor is 3.8.0 instead, because the dev
-# toolchain (lints 6.1.0) requires Dart >=3.8.0 — a 3.3.0 leg would fail
+# pubspec.yaml). The CI matrix floor is 3.13.5 instead, because the dev
+# toolchain (lints 6.1.0) requires Dart >=3.13.5 — a 3.3.0 leg would fail
 # `dart pub get` while resolving dev_dependencies before running a single
 # test.
 
@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sdk: [3.8.0, stable]
+        sdk: [3.13.5, stable]
     steps:
       - uses: actions/checkout@v7
 
