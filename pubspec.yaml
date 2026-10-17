@@ -1,0 +1,34 @@
+name: flutter_deepgram
+description: Deepgram SDK for Dart & Flutter - STT (pre-recorded, live, Flux), TTS (Aura, Flux), Voice Agent and Text Intelligence with resilient auto-reconnecting WebSockets.
+version: 1.0.0
+homepage: https://github.com/bilalahmed24/flutter_deepgram
+repository: https://github.com/bilalahmed24/flutter_deepgram
+issue_tracker: https://github.com/bilalahmed24/flutter_deepgram/issues
+documentation: https://developers.deepgram.com
+topics:
+  - deepgram
+  - speech-to-text
+  - text-to-speech
+  - voice-agent
+  - audio
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+dependencies:
+  http: ^1.6.0
+  web_socket_channel: ^3.0.3
+
+dev_dependencies:
+  lints: ^6.1.0
+  mocktail: ^1.0.5
+  test: ^1.25.0
+
+# This package is intentionally 100% pure Dart (no platform channels, no native
+# code, no Flutter SDK dependency). Every Deepgram API is plain HTTPS or a
+# WebSocket, so the same source runs on Android, iOS, Web (JS + Wasm), macOS,
+# Windows, Linux - and even in plain Dart VM projects - without any bridging.
+#
+# Why >=3.3.0: web_socket_channel 3.x requires Dart 3.3+, and the web socket
+# factory uses the `dart.library.js_interop` conditional import so the package
+# is WebAssembly-ready (no dart:html anywhere in the import graph).

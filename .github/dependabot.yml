@@ -1,0 +1,30 @@
+# Dependabot configuration.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+
+updates:
+  # The flutter_deepgram package itself (runtime + dev dependencies).
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+
+  # The example app (kept in sync with the parent package via a path
+  # dependency, but its own dev_dependencies drift on their own schedule).
+  - package-ecosystem: pub
+    directory: /example
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps-example)"
+
+  # GitHub Actions used by the CI and publish workflows.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(ci)"
