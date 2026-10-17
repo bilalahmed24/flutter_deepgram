@@ -158,11 +158,9 @@ void main() {
         topics: false,
       ).toQuery();
       expect(
-          query,
-          equals(const <String, dynamic>{
-            'sentiment': true,
-            'topics': false,
-          }));
+        query,
+        equals(const <String, dynamic>{'sentiment': true, 'topics': false}),
+      );
     });
 
     test('omits empty list fields', () {
@@ -213,17 +211,12 @@ void main() {
       final contentType = _headerOf(request.headers, 'content-type');
       expect(
         contentType,
-        anyOf(
-          isNull,
-          'application/json',
-          'text/plain; charset=utf-8',
-        ),
+        anyOf(isNull, 'application/json', 'text/plain; charset=utf-8'),
       );
       expect(
-          jsonDecode(request.body),
-          equals(<String, dynamic>{
-            'text': 'I love this product.',
-          }));
+        jsonDecode(request.body),
+        equals(<String, dynamic>{'text': 'I love this product.'}),
+      );
 
       expect(result.metadata.requestId, 'req-1');
       expect(result.sentiments, hasLength(2));
@@ -248,10 +241,7 @@ void main() {
         expect(params[key], value, reason: 'wire param $key');
       });
       // Repeated keys for the list-valued options.
-      expect(
-        queue.requests.single.url.query,
-        contains('custom_topic=Travel'),
-      );
+      expect(queue.requests.single.url.query, contains('custom_topic=Travel'));
     });
 
     test('analyzeUrl sends {url} in the body instead', () async {
@@ -268,15 +258,15 @@ void main() {
       expect(request.method, 'POST');
       expect(request.url.path, '/v1/read');
       expect(
-          jsonDecode(request.body),
-          equals(<String, dynamic>{
-            'url': 'https://example.com/review.txt',
-          }));
+        jsonDecode(request.body),
+        equals(<String, dynamic>{'url': 'https://example.com/review.txt'}),
+      );
       expect(
-          request.url.queryParametersAll,
-          equals(const <String, List<String>>{
-            'language': <String>['en'],
-          }));
+        request.url.queryParametersAll,
+        equals(const <String, List<String>>{
+          'language': <String>['en'],
+        }),
+      );
       expect(result.metadata.requestId, 'req-1');
     });
 
@@ -287,8 +277,9 @@ void main() {
         requestTimeout: const Duration(seconds: 2),
       );
       final client = _client(queue, config: config);
-      queue.enqueueJson(
-          const <String, dynamic>{'metadata': <String, dynamic>{}});
+      queue.enqueueJson(const <String, dynamic>{
+        'metadata': <String, dynamic>{},
+      });
 
       await client.analyze('Hi');
 
@@ -323,14 +314,14 @@ void main() {
       expect(metadata.summaryInfo!.outputTokens, 30);
       expect(metadata.sentimentInfo!.inputTokens, 80);
       expect(
-          metadata.modelInfo,
-          equals(<String, dynamic>{
-            'name': 'read-gen',
-            'version': '1',
-          }));
+        metadata.modelInfo,
+        equals(<String, dynamic>{'name': 'read-gen', 'version': '1'}),
+      );
       // Non-string model names are filtered out of the models list.
       expect(
-          metadata.models, equals(<String>['read-sentiment', 'read-topics']));
+        metadata.models,
+        equals(<String>['read-sentiment', 'read-topics']),
+      );
       expect(metadata.topicsInfo, isNull);
       expect(metadata.intentsInfo, isNull);
 
@@ -352,7 +343,9 @@ void main() {
       // Summaries.
       expect(result.summaries, hasLength(1));
       expect(
-          result.summaries.single.summary, 'An enthusiastic product review.');
+        result.summaries.single.summary,
+        'An enthusiastic product review.',
+      );
       expect(result.summaries.single.startWord, 0);
       expect(result.summaries.single.endWord, 5);
 
@@ -397,10 +390,7 @@ void main() {
                 'start_word': 0,
                 'end_word': 2,
                 'topics': <Map<String, dynamic>>[
-                  <String, dynamic>{
-                    'topic': 'Travel',
-                    'confidence_score': 0.9,
-                  },
+                  <String, dynamic>{'topic': 'Travel', 'confidence_score': 0.9},
                   <String, dynamic>{'topic': 'Cooking'},
                 ],
               },
@@ -531,32 +521,34 @@ void main() {
       expect(result.intents.single.intent, 'read_news');
     });
 
-    test('topics envelope without the feature key falls back to inner map',
-        () async {
-      final queue = QueueHttpClient();
-      final client = _client(queue);
-      queue.enqueueJson(<String, dynamic>{
-        'results': <String, dynamic>{
-          'topics': <String, dynamic>{
-            'results': <String, dynamic>{
-              'segments': <Map<String, dynamic>>[
-                <String, dynamic>{
-                  'start_word': 0,
-                  'end_word': 1,
-                  'topics': <Map<String, dynamic>>[
-                    <String, dynamic>{'topic': 'Sports'},
-                  ],
-                },
-              ],
+    test(
+      'topics envelope without the feature key falls back to inner map',
+      () async {
+        final queue = QueueHttpClient();
+        final client = _client(queue);
+        queue.enqueueJson(<String, dynamic>{
+          'results': <String, dynamic>{
+            'topics': <String, dynamic>{
+              'results': <String, dynamic>{
+                'segments': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'start_word': 0,
+                    'end_word': 1,
+                    'topics': <Map<String, dynamic>>[
+                      <String, dynamic>{'topic': 'Sports'},
+                    ],
+                  },
+                ],
+              },
             },
           },
-        },
-      });
+        });
 
-      final result = await client.analyze('text');
-      expect(result.topics.single.topic, 'Sports');
-      expect(result.topics.single.startWord, 0);
-    });
+        final result = await client.analyze('text');
+        expect(result.topics.single.topic, 'Sports');
+        expect(result.topics.single.startWord, 0);
+      },
+    );
 
     test('summary legacy shapes', () async {
       final queue = QueueHttpClient();
@@ -582,57 +574,61 @@ void main() {
       expect(result.summaries.single.endWord, 9);
     });
 
-    test('summary flat object accepts text/result/short and nested summary',
-        () {
-      // Flat {text}.
-      final fromText = TextIntelligenceResult.fromJson(<String, dynamic>{
-        'results': <String, dynamic>{
-          'summary': <String, dynamic>{'text': 'Flat text.'},
-        },
-      });
-      expect(fromText.summaries.single.summary, 'Flat text.');
-
-      // Flat {result}.
-      final fromResult = TextIntelligenceResult.fromJson(<String, dynamic>{
-        'results': <String, dynamic>{
-          'summary': <String, dynamic>{'result': 'Flat result.'},
-        },
-      });
-      expect(fromResult.summaries.single.summary, 'Flat result.');
-
-      // Flat {short}.
-      final fromShort = TextIntelligenceResult.fromJson(<String, dynamic>{
-        'results': <String, dynamic>{
-          'summary': <String, dynamic>{'short': 'Flat short.'},
-        },
-      });
-      expect(fromShort.summaries.single.summary, 'Flat short.');
-
-      // Nested {summary: {text}}.
-      final fromNested = TextIntelligenceResult.fromJson(<String, dynamic>{
-        'results': <String, dynamic>{
-          'summary': <String, dynamic>{
-            'summary': <String, dynamic>{'text': 'Nested under summary.'},
+    test(
+      'summary flat object accepts text/result/short and nested summary',
+      () {
+        // Flat {text}.
+        final fromText = TextIntelligenceResult.fromJson(<String, dynamic>{
+          'results': <String, dynamic>{
+            'summary': <String, dynamic>{'text': 'Flat text.'},
           },
-        },
-      });
-      expect(fromNested.summaries.single.summary, 'Nested under summary.');
-    });
+        });
+        expect(fromText.summaries.single.summary, 'Flat text.');
 
-    test('summaries list with unusable entries falls back to legacy summary',
-        () {
-      final result = TextIntelligenceResult.fromJson(<String, dynamic>{
-        'results': <String, dynamic>{
-          'summaries': <Map<String, dynamic>>[
-            <String, dynamic>{'start_word': 0}, // no usable text -> skipped
-            <String, dynamic>{'summary': ''}, // empty text -> skipped
-          ],
-          'summary': <String, dynamic>{'text': 'Legacy fallback.'},
-        },
-      });
-      expect(result.summaries, hasLength(1));
-      expect(result.summaries.single.summary, 'Legacy fallback.');
-    });
+        // Flat {result}.
+        final fromResult = TextIntelligenceResult.fromJson(<String, dynamic>{
+          'results': <String, dynamic>{
+            'summary': <String, dynamic>{'result': 'Flat result.'},
+          },
+        });
+        expect(fromResult.summaries.single.summary, 'Flat result.');
+
+        // Flat {short}.
+        final fromShort = TextIntelligenceResult.fromJson(<String, dynamic>{
+          'results': <String, dynamic>{
+            'summary': <String, dynamic>{'short': 'Flat short.'},
+          },
+        });
+        expect(fromShort.summaries.single.summary, 'Flat short.');
+
+        // Nested {summary: {text}}.
+        final fromNested = TextIntelligenceResult.fromJson(<String, dynamic>{
+          'results': <String, dynamic>{
+            'summary': <String, dynamic>{
+              'summary': <String, dynamic>{'text': 'Nested under summary.'},
+            },
+          },
+        });
+        expect(fromNested.summaries.single.summary, 'Nested under summary.');
+      },
+    );
+
+    test(
+      'summaries list with unusable entries falls back to legacy summary',
+      () {
+        final result = TextIntelligenceResult.fromJson(<String, dynamic>{
+          'results': <String, dynamic>{
+            'summaries': <Map<String, dynamic>>[
+              <String, dynamic>{'start_word': 0}, // no usable text -> skipped
+              <String, dynamic>{'summary': ''}, // empty text -> skipped
+            ],
+            'summary': <String, dynamic>{'text': 'Legacy fallback.'},
+          },
+        });
+        expect(result.summaries, hasLength(1));
+        expect(result.summaries.single.summary, 'Legacy fallback.');
+      },
+    );
 
     test('summary text aliases: summary beats text', () {
       final result = TextIntelligenceResult.fromJson(<String, dynamic>{
@@ -897,25 +893,27 @@ void main() {
       expect(queue.requests, hasLength(1));
     });
 
-    test('404 maps to DeepgramNotFoundException with header request id',
-        () async {
-      final queue = QueueHttpClient();
-      final client = _client(queue);
-      queue.enqueueJson(
-        '',
-        status: 404,
-        headers: <String, String>{'x-request-id': 'hdr-404'},
-      );
+    test(
+      '404 maps to DeepgramNotFoundException with header request id',
+      () async {
+        final queue = QueueHttpClient();
+        final client = _client(queue);
+        queue.enqueueJson(
+          '',
+          status: 404,
+          headers: <String, String>{'x-request-id': 'hdr-404'},
+        );
 
-      await expectLater(
-        client.analyze('text'),
-        throwsA(
-          isA<DeepgramNotFoundException>()
-              .having((e) => e.message, 'message', 'HTTP 404.')
-              .having((e) => e.requestId, 'requestId', 'hdr-404'),
-        ),
-      );
-    });
+        await expectLater(
+          client.analyze('text'),
+          throwsA(
+            isA<DeepgramNotFoundException>()
+                .having((e) => e.message, 'message', 'HTTP 404.')
+                .having((e) => e.requestId, 'requestId', 'hdr-404'),
+          ),
+        );
+      },
+    );
 
     test('429 retries and then maps to DeepgramRateLimitException', () async {
       final queue = QueueHttpClient();
@@ -971,17 +969,19 @@ void main() {
       final queue = QueueHttpClient();
       final client = _client(queue);
       for (var i = 0; i < 3; i++) {
-        queue.enqueueJson(
-          <String, dynamic>{'err_msg': 'Server exploded.'},
-          status: 500,
-        );
+        queue.enqueueJson(<String, dynamic>{
+          'err_msg': 'Server exploded.',
+        }, status: 500);
       }
 
       await expectLater(
         client.analyze('text'),
         throwsA(
-          isA<DeepgramServerException>()
-              .having((e) => e.message, 'message', 'Server exploded.'),
+          isA<DeepgramServerException>().having(
+            (e) => e.message,
+            'message',
+            'Server exploded.',
+          ),
         ),
       );
       expect(queue.requests, hasLength(3));
@@ -998,27 +998,29 @@ void main() {
       expect(result.sentiments, isNotEmpty);
     });
 
-    test('transport failure retries then maps to DeepgramNetworkException',
-        () async {
-      final queue = QueueHttpClient();
-      final client = _client(queue);
-      final cause = http.ClientException('boom');
-      queue.enqueueError(cause);
-      queue.enqueueError(cause);
-      queue.enqueueError(cause);
+    test(
+      'transport failure retries then maps to DeepgramNetworkException',
+      () async {
+        final queue = QueueHttpClient();
+        final client = _client(queue);
+        final cause = http.ClientException('boom');
+        queue.enqueueError(cause);
+        queue.enqueueError(cause);
+        queue.enqueueError(cause);
 
-      await expectLater(
-        client.analyze('text'),
-        throwsA(
-          isA<DeepgramNetworkException>().having(
-            (e) => e.cause,
-            'cause',
-            same(cause),
+        await expectLater(
+          client.analyze('text'),
+          throwsA(
+            isA<DeepgramNetworkException>().having(
+              (e) => e.cause,
+              'cause',
+              same(cause),
+            ),
           ),
-        ),
-      );
-      expect(queue.requests, hasLength(3));
-    });
+        );
+        expect(queue.requests, hasLength(3));
+      },
+    );
   });
 
   group('TextIntelligenceClient cancellation', () {
@@ -1030,8 +1032,11 @@ void main() {
       await expectLater(
         client.analyze('text', cancelToken: token),
         throwsA(
-          isA<DeepgramException>()
-              .having((e) => e.message, 'message', 'Request cancelled: nope'),
+          isA<DeepgramException>().having(
+            (e) => e.message,
+            'message',
+            'Request cancelled: nope',
+          ),
         ),
       );
       expect(queue.requests, isEmpty);

@@ -30,11 +30,7 @@ AgentConfigurationsClient _client(
   DeepgramConfig config = testConfig,
 }) {
   return AgentConfigurationsClient(
-    http: HttpEngine(
-      config: config,
-      auth: DeepgramAuth(config),
-      client: queue,
-    ),
+    http: HttpEngine(config: config, auth: DeepgramAuth(config), client: queue),
     config: config,
   );
 }
@@ -46,7 +42,7 @@ const Map<String, dynamic> _agentJson = <String, dynamic>{
     'language': 'en',
     'greeting': 'Hello! How can I help?',
     'listen': <String, dynamic>{
-      'provider': <String, dynamic>{'type': 'deepgram'}
+      'provider': <String, dynamic>{'type': 'deepgram'},
     },
   },
   'metadata': <String, dynamic>{'team': 'support', 'env': 'staging'},
@@ -66,8 +62,10 @@ void main() {
           'provider': <String, dynamic>{'type': 'deepgram'},
         },
       });
-      expect(config.metadata,
-          <String, String>{'team': 'support', 'env': 'staging'});
+      expect(config.metadata, <String, String>{
+        'team': 'support',
+        'env': 'staging',
+      });
       expect(config.createdAt, '2025-01-02T03:04:05Z');
       expect(config.updatedAt, '2025-06-07T08:09:10Z');
     });
@@ -165,11 +163,11 @@ void main() {
           'variable_id': 'v',
           'key': 'k',
           'value': <String, dynamic>{
-            'nested': <String>['a', 'b']
+            'nested': <String>['a', 'b'],
           },
         }).value,
         <String, dynamic>{
-          'nested': <String>['a', 'b']
+          'nested': <String>['a', 'b'],
         },
       );
       expect(
@@ -234,77 +232,80 @@ void main() {
 
       final request = queue.requests.single;
       expect(request.method, 'GET');
-      expect(request.url.toString(),
-          'https://api.deepgram.com/v1/projects/proj-1/agents');
+      expect(
+        request.url.toString(),
+        'https://api.deepgram.com/v1/projects/proj-1/agents',
+      );
       // The OpenAPI surface defines no query or pagination parameters.
       expect(request.url.query, isEmpty);
       expect(_headerOf(request.headers, 'authorization'), 'Token test-api-key');
 
       expect(configs, hasLength(1));
       expect(configs.single.agentId, 'cfg-123');
-      expect(configs.single.metadata,
-          <String, String>{'team': 'support', 'env': 'staging'});
+      expect(configs.single.metadata, <String, String>{
+        'team': 'support',
+        'env': 'staging',
+      });
     });
 
-    test('list() tolerates missing, non-list, and junk `agents` payloads',
-        () async {
-      final queue = QueueHttpClient();
-      final client = _client(queue);
+    test(
+      'list() tolerates missing, non-list, and junk `agents` payloads',
+      () async {
+        final queue = QueueHttpClient();
+        final client = _client(queue);
 
-      queue.enqueueJson(<String, dynamic>{});
-      expect(await client.list('p'), isEmpty);
+        queue.enqueueJson(<String, dynamic>{});
+        expect(await client.list('p'), isEmpty);
 
-      queue.enqueueJson(<String, dynamic>{
-        'agents': <String, dynamic>{'not': 'a list'},
-      });
-      expect(await client.list('p'), isEmpty);
+        queue.enqueueJson(<String, dynamic>{
+          'agents': <String, dynamic>{'not': 'a list'},
+        });
+        expect(await client.list('p'), isEmpty);
 
-      queue.enqueueJson(<String, dynamic>{
-        'agents': <dynamic>[
-          'a string entry',
-          7,
-          null,
-          _agentJson,
-        ],
-      });
-      final onlyValid = await client.list('p');
-      expect(onlyValid, hasLength(1));
-      expect(onlyValid.single.agentId, 'cfg-123');
-      expect(queue.requests, hasLength(3));
-    });
+        queue.enqueueJson(<String, dynamic>{
+          'agents': <dynamic>['a string entry', 7, null, _agentJson],
+        });
+        final onlyValid = await client.list('p');
+        expect(onlyValid, hasLength(1));
+        expect(onlyValid.single.agentId, 'cfg-123');
+        expect(queue.requests, hasLength(3));
+      },
+    );
 
-    test('create() POSTs the settings as a JSON string under `config`',
-        () async {
-      final queue = QueueHttpClient();
-      final client = _client(queue);
-      queue.enqueueJson(_agentJson);
+    test(
+      'create() POSTs the settings as a JSON string under `config`',
+      () async {
+        final queue = QueueHttpClient();
+        final client = _client(queue);
+        queue.enqueueJson(_agentJson);
 
-      final created = await client.create(
-        'proj-1',
-        settings: <String, dynamic>{
-          'language': 'en',
-          'greeting': 'Hello! How can I help?',
-        },
-        metadata: <String, String>{'team': 'support'},
-        apiVersion: 1,
-      );
+        final created = await client.create(
+          'proj-1',
+          settings: <String, dynamic>{
+            'language': 'en',
+            'greeting': 'Hello! How can I help?',
+          },
+          metadata: <String, String>{'team': 'support'},
+          apiVersion: 1,
+        );
 
-      final request = queue.requests.single;
-      expect(request.method, 'POST');
-      expect(request.url.path, '/v1/projects/proj-1/agents');
+        final request = queue.requests.single;
+        expect(request.method, 'POST');
+        expect(request.url.path, '/v1/projects/proj-1/agents');
 
-      // The OpenAPI spec requires the settings block to travel as a
-      // JSON-encoded string inside the `config` field.
-      final body = jsonDecode(request.body) as Map<String, dynamic>;
-      expect(body, <String, dynamic>{
-        'config': '{"language":"en","greeting":"Hello! How can I help?"}',
-        'metadata': <String, dynamic>{'team': 'support'},
-        'api_version': 1,
-      });
+        // The OpenAPI spec requires the settings block to travel as a
+        // JSON-encoded string inside the `config` field.
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body, <String, dynamic>{
+          'config': '{"language":"en","greeting":"Hello! How can I help?"}',
+          'metadata': <String, dynamic>{'team': 'support'},
+          'api_version': 1,
+        });
 
-      expect(created.agentId, 'cfg-123');
-      expect(created.config, _agentJson['config']);
-    });
+        expect(created.agentId, 'cfg-123');
+        expect(created.config, _agentJson['config']);
+      },
+    );
 
     test('create() omits metadata and api_version when not supplied', () async {
       final queue = QueueHttpClient();
@@ -318,9 +319,7 @@ void main() {
 
       final body =
           jsonDecode(queue.requests.single.body) as Map<String, dynamic>;
-      expect(body, <String, dynamic>{
-        'config': '{"greeting":"Hi"}',
-      });
+      expect(body, <String, dynamic>{'config': '{"greeting":"Hi"}'});
       expect(created.agentId, 'cfg-bare');
     });
 
@@ -399,17 +398,24 @@ void main() {
 
       await expectLater(
         client.delete('proj-1', 'missing'),
-        throwsA(isA<DeepgramNotFoundException>()
-            .having(
-              (DeepgramNotFoundException error) => error.message,
-              'message',
-              'Configuration not found.',
-            )
-            .having((DeepgramNotFoundException error) => error.requestId,
-                'requestId', 'req-404')),
+        throwsA(
+          isA<DeepgramNotFoundException>()
+              .having(
+                (DeepgramNotFoundException error) => error.message,
+                'message',
+                'Configuration not found.',
+              )
+              .having(
+                (DeepgramNotFoundException error) => error.requestId,
+                'requestId',
+                'req-404',
+              ),
+        ),
       );
       expect(
-          queue.requests.single.url.path, '/v1/projects/proj-1/agents/missing');
+        queue.requests.single.url.path,
+        '/v1/projects/proj-1/agents/missing',
+      );
     });
   });
 
@@ -459,37 +465,39 @@ void main() {
       expect(await client.listVariables('p'), isEmpty);
     });
 
-    test('createVariable() POSTs key, value, and optional api_version',
-        () async {
-      final queue = QueueHttpClient();
-      final client = _client(queue);
-      queue.enqueueJson(<String, dynamic>{
-        'variable_id': 'var-9',
-        'key': 'DG_NEW',
-        'value': <String, dynamic>{'nested': true},
-      });
-
-      final created = await client.createVariable(
-        'proj-1',
-        key: 'DG_NEW',
-        value: <String, dynamic>{'nested': true},
-        apiVersion: 2,
-      );
-
-      final request = queue.requests.single;
-      expect(request.method, 'POST');
-      expect(request.url.path, '/v1/projects/proj-1/agent-variables');
-      expect(
-        jsonDecode(request.body) as Map<String, dynamic>,
-        <String, dynamic>{
+    test(
+      'createVariable() POSTs key, value, and optional api_version',
+      () async {
+        final queue = QueueHttpClient();
+        final client = _client(queue);
+        queue.enqueueJson(<String, dynamic>{
+          'variable_id': 'var-9',
           'key': 'DG_NEW',
           'value': <String, dynamic>{'nested': true},
-          'api_version': 2,
-        },
-      );
-      expect(created.variableId, 'var-9');
-      expect(created.value, <String, dynamic>{'nested': true});
-    });
+        });
+
+        final created = await client.createVariable(
+          'proj-1',
+          key: 'DG_NEW',
+          value: <String, dynamic>{'nested': true},
+          apiVersion: 2,
+        );
+
+        final request = queue.requests.single;
+        expect(request.method, 'POST');
+        expect(request.url.path, '/v1/projects/proj-1/agent-variables');
+        expect(
+          jsonDecode(request.body) as Map<String, dynamic>,
+          <String, dynamic>{
+            'key': 'DG_NEW',
+            'value': <String, dynamic>{'nested': true},
+            'api_version': 2,
+          },
+        );
+        expect(created.variableId, 'var-9');
+        expect(created.value, <String, dynamic>{'nested': true});
+      },
+    );
 
     test('createVariable() omits api_version when not supplied', () async {
       final queue = QueueHttpClient();
@@ -530,8 +538,11 @@ void main() {
         'value': 'platinum',
       });
 
-      final updated =
-          await client.updateVariable('proj-1', 'var-1', value: 'platinum');
+      final updated = await client.updateVariable(
+        'proj-1',
+        'var-1',
+        value: 'platinum',
+      );
 
       final request = queue.requests.single;
       expect(request.method, 'PATCH');
@@ -623,7 +634,7 @@ void main() {
       queue.enqueueJson(<String, dynamic>{
         'models': <dynamic>[
           <String, dynamic>{'id': 'solo'},
-          'junk'
+          'junk',
         ],
       });
       final models = await client.listThinkModels();
@@ -634,35 +645,42 @@ void main() {
   });
 
   group('AgentConfigurationsClient — error paths', () {
-    test('401 maps to DeepgramAuthException with parsed error fields',
-        () async {
-      final queue = QueueHttpClient();
-      final client = _client(queue);
-      queue.enqueueJson(<String, dynamic>{
-        'err_msg': 'Invalid API key.',
-        'request_id': 'req-auth',
-        'err_code': 'AUTH_INVALID',
-      }, status: 401);
+    test(
+      '401 maps to DeepgramAuthException with parsed error fields',
+      () async {
+        final queue = QueueHttpClient();
+        final client = _client(queue);
+        queue.enqueueJson(<String, dynamic>{
+          'err_msg': 'Invalid API key.',
+          'request_id': 'req-auth',
+          'err_code': 'AUTH_INVALID',
+        }, status: 401);
 
-      await expectLater(
-        client.list('proj-1'),
-        throwsA(isA<DeepgramAuthException>()
-            .having(
-              (DeepgramAuthException error) => error.message,
-              'message',
-              'Invalid API key.',
-            )
-            .having((DeepgramAuthException error) => error.requestId,
-                'requestId', 'req-auth')
-            .having(
-              (DeepgramAuthException error) => error.code,
-              'code',
-              'AUTH_INVALID',
-            )),
-      );
-      // Non-retryable client errors consume exactly one request.
-      expect(queue.requests, hasLength(1));
-    });
+        await expectLater(
+          client.list('proj-1'),
+          throwsA(
+            isA<DeepgramAuthException>()
+                .having(
+                  (DeepgramAuthException error) => error.message,
+                  'message',
+                  'Invalid API key.',
+                )
+                .having(
+                  (DeepgramAuthException error) => error.requestId,
+                  'requestId',
+                  'req-auth',
+                )
+                .having(
+                  (DeepgramAuthException error) => error.code,
+                  'code',
+                  'AUTH_INVALID',
+                ),
+          ),
+        );
+        // Non-retryable client errors consume exactly one request.
+        expect(queue.requests, hasLength(1));
+      },
+    );
 
     test('404 maps to DeepgramNotFoundException on get()', () async {
       final queue = QueueHttpClient();
@@ -678,28 +696,28 @@ void main() {
       expect(queue.requests, hasLength(1));
     });
 
-    test(
-        '429 retries up to maxRetries then maps to '
+    test('429 retries up to maxRetries then maps to '
         'DeepgramRateLimitException', () async {
       final queue = QueueHttpClient();
       final client = _client(queue);
       // testConfig.maxRetries is 2 → the engine attempts 3 times.
       for (var i = 0; i < 3; i++) {
         queue.enqueueJson(
-            <String, dynamic>{
-              'err_msg': 'Rate limit exceeded.',
-            },
-            status: 429,
-            headers: <String, String>{'retry-after': '0'});
+          <String, dynamic>{'err_msg': 'Rate limit exceeded.'},
+          status: 429,
+          headers: <String, String>{'retry-after': '0'},
+        );
       }
 
       await expectLater(
         client.list('proj-1'),
-        throwsA(isA<DeepgramRateLimitException>().having(
-          (DeepgramRateLimitException error) => error.retryAfter,
-          'retryAfter',
-          Duration.zero,
-        )),
+        throwsA(
+          isA<DeepgramRateLimitException>().having(
+            (DeepgramRateLimitException error) => error.retryAfter,
+            'retryAfter',
+            Duration.zero,
+          ),
+        ),
       );
       expect(queue.requests, hasLength(3));
     });
@@ -713,11 +731,13 @@ void main() {
 
       await expectLater(
         client.create('proj-1', settings: <String, dynamic>{'bad': true}),
-        throwsA(isA<DeepgramBadRequestException>().having(
-          (DeepgramBadRequestException error) => error.message,
-          'message',
-          'config must be a valid Settings object.',
-        )),
+        throwsA(
+          isA<DeepgramBadRequestException>().having(
+            (DeepgramBadRequestException error) => error.message,
+            'message',
+            'config must be a valid Settings object.',
+          ),
+        ),
       );
     });
 
@@ -730,11 +750,13 @@ void main() {
 
       await expectLater(
         client.listVariables('proj-1'),
-        throwsA(isA<DeepgramServerException>().having(
-          (DeepgramServerException error) => error.message,
-          'message',
-          'HTTP 500.',
-        )),
+        throwsA(
+          isA<DeepgramServerException>().having(
+            (DeepgramServerException error) => error.message,
+            'message',
+            'HTTP 500.',
+          ),
+        ),
       );
       expect(queue.requests, hasLength(3));
     });
@@ -793,8 +815,11 @@ void main() {
 
     test('regional configs target the regional REST host', () async {
       final queue = QueueHttpClient();
-      final config = DeepgramConfig.region(DeepgramRegion.eu,
-          apiKey: 'k', requestTimeout: const Duration(seconds: 2));
+      final config = DeepgramConfig.region(
+        DeepgramRegion.eu,
+        apiKey: 'k',
+        requestTimeout: const Duration(seconds: 2),
+      );
       final client = _client(queue, config: config);
       queue.enqueueJson(<String, dynamic>{'agents': <dynamic>[]});
 

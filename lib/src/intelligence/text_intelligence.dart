@@ -405,10 +405,11 @@ class TextIntent {
 /// REST client for the Deepgram Text Intelligence API (`/v1/read`).
 class TextIntelligenceClient {
   /// Creates a text intelligence client.
-  TextIntelligenceClient(
-      {required HttpEngine http, required DeepgramConfig config})
-      : _http = http,
-        _config = config;
+  TextIntelligenceClient({
+    required HttpEngine http,
+    required DeepgramConfig config,
+  }) : _http = http,
+       _config = config;
 
   final HttpEngine _http;
   final DeepgramConfig _config;
@@ -483,7 +484,7 @@ List<String>? _stringList(dynamic v) {
   if (v is! List<dynamic>) return null;
   return <String>[
     for (final item in v)
-      if (item is String) item
+      if (item is String) item,
   ];
 }
 
@@ -544,11 +545,13 @@ List<TextSummary> _parseSummaries(Map<String, dynamic> results) {
       if (map == null) continue;
       final text = _summaryTextOf(map);
       if (text == null) continue;
-      out.add(TextSummary(
-        summary: text,
-        startWord: _asInt(map['start_word']),
-        endWord: _asInt(map['end_word']),
-      ));
+      out.add(
+        TextSummary(
+          summary: text,
+          startWord: _asInt(map['start_word']),
+          endWord: _asInt(map['end_word']),
+        ),
+      );
     }
     if (out.isNotEmpty) return out;
   }
@@ -565,11 +568,13 @@ List<TextSummary> _parseSummaries(Map<String, dynamic> results) {
   }
   final text = _summaryTextOf(node);
   if (text == null) return out;
-  out.add(TextSummary(
-    summary: text,
-    startWord: _asInt(node['start_word']),
-    endWord: _asInt(node['end_word']),
-  ));
+  out.add(
+    TextSummary(
+      summary: text,
+      startWord: _asInt(node['start_word']),
+      endWord: _asInt(node['end_word']),
+    ),
+  );
   return out;
 }
 
@@ -612,23 +617,21 @@ void _collectTopics(Map<String, dynamic> segment, List<TextTopic> out) {
   if (nested.isEmpty) {
     final direct = _asString(segment['topic']);
     if (direct != null && direct.isNotEmpty) {
-      out.add(TextTopic(
-        topic: direct,
-        startWord: startWord,
-        endWord: endWord,
-      ));
+      out.add(TextTopic(topic: direct, startWord: startWord, endWord: endWord));
     }
     return;
   }
   for (final item in nested) {
     final topicMap = _cast<Map<String, dynamic>>(item);
     if (topicMap == null) continue;
-    out.add(TextTopic(
-      topic: _asString(topicMap['topic']) ?? '',
-      confidenceScore: _asDouble(topicMap['confidence_score']),
-      startWord: _asInt(topicMap['start_word']) ?? startWord,
-      endWord: _asInt(topicMap['end_word']) ?? endWord,
-    ));
+    out.add(
+      TextTopic(
+        topic: _asString(topicMap['topic']) ?? '',
+        confidenceScore: _asDouble(topicMap['confidence_score']),
+        startWord: _asInt(topicMap['start_word']) ?? startWord,
+        endWord: _asInt(topicMap['end_word']) ?? endWord,
+      ),
+    );
   }
 }
 
@@ -658,22 +661,22 @@ void _collectIntents(Map<String, dynamic> segment, List<TextIntent> out) {
   if (nested.isEmpty) {
     final direct = _asString(segment['intent']);
     if (direct != null && direct.isNotEmpty) {
-      out.add(TextIntent(
-        intent: direct,
-        startWord: startWord,
-        endWord: endWord,
-      ));
+      out.add(
+        TextIntent(intent: direct, startWord: startWord, endWord: endWord),
+      );
     }
     return;
   }
   for (final item in nested) {
     final intentMap = _cast<Map<String, dynamic>>(item);
     if (intentMap == null) continue;
-    out.add(TextIntent(
-      intent: _asString(intentMap['intent']) ?? '',
-      confidenceScore: _asDouble(intentMap['confidence_score']),
-      startWord: _asInt(intentMap['start_word']) ?? startWord,
-      endWord: _asInt(intentMap['end_word']) ?? endWord,
-    ));
+    out.add(
+      TextIntent(
+        intent: _asString(intentMap['intent']) ?? '',
+        confidenceScore: _asDouble(intentMap['confidence_score']),
+        startWord: _asInt(intentMap['start_word']) ?? startWord,
+        endWord: _asInt(intentMap['end_word']) ?? endWord,
+      ),
+    );
   }
 }

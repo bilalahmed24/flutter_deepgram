@@ -102,21 +102,23 @@ void main() {
       }
     });
 
-    test('repeated calls for the same attempt stay in bounds (stateless)',
-        () async {
-      final policy = BackoffPolicy(
-        baseDelay: const Duration(seconds: 1),
-        maxDelay: const Duration(seconds: 30),
-        multiplier: 2,
-        jitterFraction: 0.25,
-        random: math.Random(99),
-      );
+    test(
+      'repeated calls for the same attempt stay in bounds (stateless)',
+      () async {
+        final policy = BackoffPolicy(
+          baseDelay: const Duration(seconds: 1),
+          maxDelay: const Duration(seconds: 30),
+          multiplier: 2,
+          jitterFraction: 0.25,
+          random: math.Random(99),
+        );
 
-      for (var i = 0; i < 5; i++) {
-        final delay = policy.delayFor(2);
-        expect(delay.inMilliseconds, inInclusiveRange(1499, 2501));
-      }
-    });
+        for (var i = 0; i < 5; i++) {
+          final delay = policy.delayFor(2);
+          expect(delay.inMilliseconds, inInclusiveRange(1499, 2501));
+        }
+      },
+    );
 
     test('default-constructed policies never exceed max + jitter', () {
       final policy = BackoffPolicy();
@@ -240,48 +242,52 @@ void main() {
       expect(probe.lastRedAt, isNull);
     });
 
-    test('a reachable endpoint reports up and stamps lastGreenAt (UTC)',
-        () async {
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      server.listen((request) => request.response.close());
+    test(
+      'a reachable endpoint reports up and stamps lastGreenAt (UTC)',
+      () async {
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        server.listen((request) => request.response.close());
 
-      final probe = ConnectivityProbe(
-        probeUrl: 'http://127.0.0.1:${server.port}/',
-      );
-      final before = DateTime.now().toUtc();
+        final probe = ConnectivityProbe(
+          probeUrl: 'http://127.0.0.1:${server.port}/',
+        );
+        final before = DateTime.now().toUtc();
 
-      final up = await probe.isInternetAvailable();
-      final after = DateTime.now().toUtc();
+        final up = await probe.isInternetAvailable();
+        final after = DateTime.now().toUtc();
 
-      expect(up, isTrue);
-      expect(probe.lastGreenAt, isNotNull);
-      expect(probe.lastRedAt, isNull);
-      final green = probe.lastGreenAt!;
-      expect(green.isUtc, isTrue);
-      expect(green.isBefore(before), isFalse);
-      expect(green.isAfter(after), isFalse);
+        expect(up, isTrue);
+        expect(probe.lastGreenAt, isNotNull);
+        expect(probe.lastRedAt, isNull);
+        final green = probe.lastGreenAt!;
+        expect(green.isUtc, isTrue);
+        expect(green.isBefore(before), isFalse);
+        expect(green.isAfter(after), isFalse);
 
-      await server.close();
-    });
+        await server.close();
+      },
+    );
 
-    test('a refused connection reports down and stamps lastRedAt (UTC)',
-        () async {
-      // Bind an ephemeral port, then close it so nothing listens there.
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      final deadPort = server.port;
-      await server.close();
+    test(
+      'a refused connection reports down and stamps lastRedAt (UTC)',
+      () async {
+        // Bind an ephemeral port, then close it so nothing listens there.
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        final deadPort = server.port;
+        await server.close();
 
-      final probe = ConnectivityProbe(
-        probeUrl: 'http://127.0.0.1:$deadPort/',
-      );
+        final probe = ConnectivityProbe(
+          probeUrl: 'http://127.0.0.1:$deadPort/',
+        );
 
-      final up = await probe.isInternetAvailable();
+        final up = await probe.isInternetAvailable();
 
-      expect(up, isFalse);
-      expect(probe.lastGreenAt, isNull);
-      expect(probe.lastRedAt, isNotNull);
-      expect(probe.lastRedAt!.isUtc, isTrue);
-    });
+        expect(up, isFalse);
+        expect(probe.lastGreenAt, isNull);
+        expect(probe.lastRedAt, isNotNull);
+        expect(probe.lastRedAt!.isUtc, isTrue);
+      },
+    );
 
     test('never throws, even for a malformed probe URL', () async {
       final probe = ConnectivityProbe(probeUrl: '::not a valid url::');

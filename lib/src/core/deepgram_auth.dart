@@ -24,7 +24,7 @@ typedef DeepgramTokenProvider = Future<String> Function();
 class DeepgramAuth {
   /// Creates auth bound to the given [DeepgramConfig].
   DeepgramAuth(this._config, {DeepgramTokenProvider? tokenProvider})
-      : _tokenProvider = tokenProvider;
+    : _tokenProvider = tokenProvider;
 
   final DeepgramConfig _config;
   final DeepgramTokenProvider? _tokenProvider;
@@ -64,7 +64,8 @@ class DeepgramAuth {
   Future<String> authorizationHeader() async {
     final credential = await token();
     final apiKey = _config.apiKey;
-    final usesApiKey = apiKey != null &&
+    final usesApiKey =
+        apiKey != null &&
         apiKey.isNotEmpty &&
         (_cachedJwt == null || _cachedJwt!.isEmpty) &&
         (_config.jwt == null || _config.jwt!.isEmpty) &&
@@ -118,12 +119,12 @@ class DeepgramAuth {
     } on DeepgramException {
       rethrow;
     } on TimeoutException {
-      throw const DeepgramTimeoutException(
-        'Token grant request timed out.',
-      );
+      throw const DeepgramTimeoutException('Token grant request timed out.');
     } on http.ClientException catch (e) {
-      throw DeepgramNetworkException('Token grant transport failure.',
-          cause: e);
+      throw DeepgramNetworkException(
+        'Token grant transport failure.',
+        cause: e,
+      );
     } on FormatException {
       throw const DeepgramServerException(
         'The token grant endpoint returned a non-JSON body.',

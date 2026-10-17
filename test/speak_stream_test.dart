@@ -100,8 +100,9 @@ class _RoutingHttpClient implements HttpClient {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
-      'Unexpected HttpClient member used by the speak stream tests: '
-      '${invocation.memberName}');
+    'Unexpected HttpClient member used by the speak stream tests: '
+    '${invocation.memberName}',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -128,14 +129,18 @@ class _ServerConn {
 
   /// Starts pumping inbound frames.
   void pump() {
-    socket.cast<Object>().listen((Object frame) {
-      frames.add(frame);
-      if (_frameWaiters.isNotEmpty) {
-        _frameWaiters.removeAt(0).complete(frame);
-      } else {
-        _pendingFrames.add(frame);
-      }
-    }, onDone: _markDone, onError: (Object _) => _markDone());
+    socket.cast<Object>().listen(
+      (Object frame) {
+        frames.add(frame);
+        if (_frameWaiters.isNotEmpty) {
+          _frameWaiters.removeAt(0).complete(frame);
+        } else {
+          _pendingFrames.add(frame);
+        }
+      },
+      onDone: _markDone,
+      onError: (Object _) => _markDone(),
+    );
   }
 
   /// Resolves with the next frame the SDK sends (already-received frames are
@@ -146,10 +151,15 @@ class _ServerConn {
     }
     final waiter = Completer<Object>();
     _frameWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout, onTimeout: () {
-      throw TimeoutException('No frame within $_waitTimeout. '
-          'Frames so far: $frames');
-    });
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () {
+        throw TimeoutException(
+          'No frame within $_waitTimeout. '
+          'Frames so far: $frames',
+        );
+      },
+    );
   }
 
   /// Resolves once the socket is closed from either side.
@@ -157,8 +167,10 @@ class _ServerConn {
     if (_done) return Future<void>.value();
     final waiter = Completer<void>();
     _doneWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout,
-        onTimeout: () => throw TimeoutException('Socket stayed open.'));
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () => throw TimeoutException('Socket stayed open.'),
+    );
   }
 
   /// Sends a text frame.
@@ -232,9 +244,11 @@ class _LoopbackSpeakServer {
     }
     final waiter = Completer<_ServerConn>();
     _connWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout,
-        onTimeout: () =>
-            throw TimeoutException('No connection within $_waitTimeout.'));
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () =>
+          throw TimeoutException('No connection within $_waitTimeout.'),
+    );
   }
 
   /// Shuts the server down.
@@ -255,8 +269,10 @@ class _LoopbackSpeakServer {
           await request.response.close();
           return;
         }
-        final conn =
-            _ServerConn(request, await WebSocketTransformer.upgrade(request));
+        final conn = _ServerConn(
+          request,
+          await WebSocketTransformer.upgrade(request),
+        );
         connections.add(conn);
         conn.pump();
         if (_connWaiters.isNotEmpty) {
@@ -305,8 +321,10 @@ class _Recorder<T> {
   bool _done = false;
 
   /// Resolves once the stream is done (bounded).
-  Future<void> get onDone => _doneCompleter.future.timeout(_waitTimeout,
-      onTimeout: () => throw TimeoutException('Stream was not done in time.'));
+  Future<void> get onDone => _doneCompleter.future.timeout(
+    _waitTimeout,
+    onTimeout: () => throw TimeoutException('Stream was not done in time.'),
+  );
 
   /// Resolves with the next unconsumed event, in order.
   ///
@@ -325,11 +343,16 @@ class _Recorder<T> {
     }
     final wait = _PredicateWait<T>(predicate);
     _predicateWaiters.add(wait);
-    return wait.completer.future.timeout(_waitTimeout, onTimeout: () {
-      _predicateWaiters.remove(wait);
-      throw TimeoutException('No matching event within $_waitTimeout. '
-          'Recorded: $values');
-    });
+    return wait.completer.future.timeout(
+      _waitTimeout,
+      onTimeout: () {
+        _predicateWaiters.remove(wait);
+        throw TimeoutException(
+          'No matching event within $_waitTimeout. '
+          'Recorded: $values',
+        );
+      },
+    );
   }
 
   /// Resolves once [n] matching events have been recorded.
@@ -337,11 +360,16 @@ class _Recorder<T> {
     if (_countOf(predicate) >= n) return Future<void>.value();
     final wait = _CountWait<T>(n, predicate);
     _countWaiters.add(wait);
-    return wait.completer.future.timeout(_waitTimeout, onTimeout: () {
-      _countWaiters.remove(wait);
-      throw TimeoutException('Only ${_countOf(predicate)} of $n matching '
-          'events within $_waitTimeout. Recorded: $values');
-    });
+    return wait.completer.future.timeout(
+      _waitTimeout,
+      onTimeout: () {
+        _countWaiters.remove(wait);
+        throw TimeoutException(
+          'Only ${_countOf(predicate)} of $n matching '
+          'events within $_waitTimeout. Recorded: $values',
+        );
+      },
+    );
   }
 
   /// Stops recording.
@@ -353,12 +381,18 @@ class _Recorder<T> {
     }
     final waiter = Completer<T>();
     _indexWaiters.add(_IndexWait<T>(index, waiter));
-    return waiter.future.timeout(_waitTimeout, onTimeout: () {
-      _indexWaiters
-          .removeWhere((_IndexWait<T> wait) => wait.completer == waiter);
-      throw TimeoutException('No event at position $index within '
-          '$_waitTimeout. Recorded: $values');
-    });
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () {
+        _indexWaiters.removeWhere(
+          (_IndexWait<T> wait) => wait.completer == waiter,
+        );
+        throw TimeoutException(
+          'No event at position $index within '
+          '$_waitTimeout. Recorded: $values',
+        );
+      },
+    );
   }
 
   final List<_IndexWait<T>> _indexWaiters = <_IndexWait<T>>[];
@@ -468,16 +502,16 @@ class _ForwardingClient extends http.BaseClient {
 /// Wires a config, auth, HTTP engine, and logger against [server].
 class _Harness {
   _Harness(this.server)
-      : config = DeepgramConfig(
-          apiKey: 'test-api-key',
-          baseUrl: _deepgramTestHost,
-          useTls: false,
-          requestTimeout: const Duration(seconds: 2),
-          connectTimeout: const Duration(seconds: 2),
-          maxRetries: 2,
-          retryBaseDelay: const Duration(milliseconds: 1),
-          retryMaxDelay: const Duration(milliseconds: 5),
-        ) {
+    : config = DeepgramConfig(
+        apiKey: 'test-api-key',
+        baseUrl: _deepgramTestHost,
+        useTls: false,
+        requestTimeout: const Duration(seconds: 2),
+        connectTimeout: const Duration(seconds: 2),
+        maxRetries: 2,
+        retryBaseDelay: const Duration(milliseconds: 1),
+        retryMaxDelay: const Duration(milliseconds: 5),
+      ) {
     _router.port = server.port;
     auth = DeepgramAuth(config);
     httpEngine = HttpEngine(
@@ -549,8 +583,9 @@ void main() {
     });
 
     test('missing fields fall back to empty values', () {
-      final TtsMetadataMessage metadata =
-          TtsMetadataMessage.fromJson(<String, dynamic>{});
+      final TtsMetadataMessage metadata = TtsMetadataMessage.fromJson(
+        <String, dynamic>{},
+      );
       expect(metadata.requestId, '');
       expect(metadata.modelName, '');
       expect(metadata.modelVersion, '');
@@ -587,624 +622,644 @@ void main() {
 
   group('TtsWarning.fromJson (defensive parsing)', () {
     test('parses code and description', () {
-      final TtsWarning warning = TtsWarning.fromJson(
-        <String, dynamic>{
-          'type': 'Warning',
-          'code': 'NO_SYNTHESIZABLE_TEXT',
-          'description': 'No text was synthesizable.',
-        },
-      );
+      final TtsWarning warning = TtsWarning.fromJson(<String, dynamic>{
+        'type': 'Warning',
+        'code': 'NO_SYNTHESIZABLE_TEXT',
+        'description': 'No text was synthesizable.',
+      });
       expect(warning.code, 'NO_SYNTHESIZABLE_TEXT');
       expect(warning.description, 'No text was synthesizable.');
     });
 
     test('missing or wrongly-typed fields fall back to empty strings', () {
-      final TtsWarning warning = TtsWarning.fromJson(
-        <String, dynamic>{
-          'code': 7,
-          'description': <String>['x']
-        },
-      );
+      final TtsWarning warning = TtsWarning.fromJson(<String, dynamic>{
+        'code': 7,
+        'description': <String>['x'],
+      });
       expect(warning.code, '');
       expect(warning.description, '');
     });
   });
 
-  group('TtsStreamClient (loopback /v1/speak server)',
-      timeout: const Timeout(Duration(seconds: 5)), () {
-    test(
-        'start() opens ws://host/v1/speak with the option query and Token '
-        'authorization header', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        options: const SpeakOptions(
-          model: DeepgramVoices.aura2ThaliaEn,
-          encoding: TtsEncoding.linear16,
-          sampleRate: 16000,
-          speed: 1.2,
-          tag: <String>['env:test', 'run:7'],
-          mipOptOut: true,
-        ),
-        wsOptions: _fastWsOptions,
-      );
-      addTearDown(client.forceClose);
+  group(
+    'TtsStreamClient (loopback /v1/speak server)',
+    timeout: const Timeout(Duration(seconds: 5)),
+    () {
+      test('start() opens ws://host/v1/speak with the option query and Token '
+          'authorization header', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          options: const SpeakOptions(
+            model: DeepgramVoices.aura2ThaliaEn,
+            encoding: TtsEncoding.linear16,
+            sampleRate: 16000,
+            speed: 1.2,
+            tag: <String>['env:test', 'run:7'],
+            mipOptOut: true,
+          ),
+          wsOptions: _fastWsOptions,
+        );
+        addTearDown(client.forceClose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      expect(client.isConnected, isTrue);
-      expect(conn.request.uri.path, '/v1/speak');
-      final Map<String, List<String>> query =
-          conn.request.uri.queryParametersAll;
-      expect(query['model'], <String>['aura-2-thalia-en']);
-      expect(query['encoding'], <String>['linear16']);
-      expect(query['sample_rate'], <String>['16000']);
-      expect(query['speed'], <String>['1.2']);
-      expect(query['tag'], <String>['env:test', 'run:7']);
-      expect(query['mip_opt_out'], <String>['true']);
-      expect(
-        conn.request.headers.value('Authorization'),
-        'Token test-api-key',
-      );
-    });
+        expect(client.isConnected, isTrue);
+        expect(conn.request.uri.path, '/v1/speak');
+        final Map<String, List<String>> query =
+            conn.request.uri.queryParametersAll;
+        expect(query['model'], <String>['aura-2-thalia-en']);
+        expect(query['encoding'], <String>['linear16']);
+        expect(query['sample_rate'], <String>['16000']);
+        expect(query['speed'], <String>['1.2']);
+        expect(query['tag'], <String>['env:test', 'run:7']);
+        expect(query['mip_opt_out'], <String>['true']);
+        expect(
+          conn.request.headers.value('Authorization'),
+          'Token test-api-key',
+        );
+      });
 
-    test('start() without options sends a bare path', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
+      test('start() without options sends a bare path', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      expect(conn.request.uri.path, '/v1/speak');
-      expect(conn.request.uri.queryParameters, isEmpty);
-    });
+        expect(conn.request.uri.path, '/v1/speak');
+        expect(conn.request.uri.queryParameters, isEmpty);
+      });
 
-    test('binary audio frames surface on the audio stream', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final audio = _Recorder<List<int>>(client.audio);
-      addTearDown(audio.dispose);
+      test('binary audio frames surface on the audio stream', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+        final audio = _Recorder<List<int>>(client.audio);
+        addTearDown(audio.dispose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      conn.sendBytes(<int>[1, 2, 3]);
-      conn.sendBytes(<int>[255, 0, 128]);
+        conn.sendBytes(<int>[1, 2, 3]);
+        conn.sendBytes(<int>[255, 0, 128]);
 
-      expect(await audio.next, <int>[1, 2, 3]);
-      expect(await audio.next, <int>[255, 0, 128]);
-      expect(audio.values, hasLength(2));
-    });
+        expect(await audio.next, <int>[1, 2, 3]);
+        expect(await audio.next, <int>[255, 0, 128]);
+        expect(audio.values, hasLength(2));
+      });
 
-    test('Metadata frames surface as typed TtsMetadataMessage', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final metadata = _Recorder<TtsMetadataMessage>(client.metadata);
-      addTearDown(metadata.dispose);
+      test('Metadata frames surface as typed TtsMetadataMessage', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+        final metadata = _Recorder<TtsMetadataMessage>(client.metadata);
+        addTearDown(metadata.dispose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      conn.sendText(jsonEncode(<String, Object>{
-        'type': 'Metadata',
-        'request_id': 'req-meta',
-        'model_name': 'aura-2-thalia-en',
-        'model_version': '1.0.2',
-        'model_uuid': 'uuid-1',
-        'additional_model_uuids': <String>['uuid-2'],
-      }));
+        conn.sendText(
+          jsonEncode(<String, Object>{
+            'type': 'Metadata',
+            'request_id': 'req-meta',
+            'model_name': 'aura-2-thalia-en',
+            'model_version': '1.0.2',
+            'model_uuid': 'uuid-1',
+            'additional_model_uuids': <String>['uuid-2'],
+          }),
+        );
 
-      final TtsMetadataMessage event = await metadata.next;
-      expect(event.requestId, 'req-meta');
-      expect(event.modelName, 'aura-2-thalia-en');
-      expect(event.modelVersion, '1.0.2');
-      expect(event.modelUuid, 'uuid-1');
-      expect(event.additionalModelUuids, <String>['uuid-2']);
-    });
+        final TtsMetadataMessage event = await metadata.next;
+        expect(event.requestId, 'req-meta');
+        expect(event.modelName, 'aura-2-thalia-en');
+        expect(event.modelVersion, '1.0.2');
+        expect(event.modelUuid, 'uuid-1');
+        expect(event.additionalModelUuids, <String>['uuid-2']);
+      });
 
-    test('Flushed sequence ids parse as int, numeric string, and double',
+      test(
+        'Flushed sequence ids parse as int, numeric string, and double',
         () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final flushed = _Recorder<int>(client.flushed);
-      addTearDown(flushed.dispose);
+          final server = await _LoopbackSpeakServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(wsOptions: _fastWsOptions);
+          addTearDown(client.forceClose);
+          final flushed = _Recorder<int>(client.flushed);
+          addTearDown(flushed.dispose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
 
-      conn.sendText('{"type":"Flushed","sequence_id":7}');
-      conn.sendText('{"type":"Flushed","sequence_id":"42"}');
-      conn.sendText('{"type":"Flushed","sequence_id":9.5}');
+          conn.sendText('{"type":"Flushed","sequence_id":7}');
+          conn.sendText('{"type":"Flushed","sequence_id":"42"}');
+          conn.sendText('{"type":"Flushed","sequence_id":9.5}');
 
-      expect(await flushed.next, 7);
-      expect(await flushed.next, 42);
-      expect(await flushed.next, 9);
-    });
-
-    test('Cleared frames surface on the cleared stream', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final cleared = _Recorder<int>(client.cleared);
-      addTearDown(cleared.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      conn.sendText('{"type":"Cleared","sequence_id":3}');
-      expect(await cleared.next, 3);
-    });
-
-    test('Warning frames surface as typed TtsWarning', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final warnings = _Recorder<TtsWarning>(client.warnings);
-      addTearDown(warnings.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      conn.sendText(jsonEncode(<String, Object>{
-        'type': 'Warning',
-        'code': 'SYNTHESIS_RETRYING',
-        'description': 'Retrying synthesis.',
-      }));
-
-      final TtsWarning warning = await warnings.next;
-      expect(warning.code, 'SYNTHESIS_RETRYING');
-      expect(warning.description, 'Retrying synthesis.');
-    });
-
-    test(
-        'Flushed/Cleared frames without a valid sequence_id are dropped '
-        'with a MALFORMED_FRAME warning', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final flushed = _Recorder<int>(client.flushed);
-      addTearDown(flushed.dispose);
-      final cleared = _Recorder<int>(client.cleared);
-      addTearDown(cleared.dispose);
-      final warnings = _Recorder<TtsWarning>(client.warnings);
-      addTearDown(warnings.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      conn.sendText('{"type":"Flushed"}');
-      conn.sendText('{"type":"Flushed","sequence_id":"not-a-number"}');
-      conn.sendText('{"type":"Flushed","sequence_id":true}');
-      conn.sendText('{"type":"Cleared","sequence_id":null}');
-
-      await warnings.seen(4, (TtsWarning w) => w.code == 'MALFORMED_FRAME');
-      expect(flushed.values, isEmpty);
-      expect(cleared.values, isEmpty);
-      expect(
-        harness.logger.warns,
-        containsAll(<Matcher>[
-          contains('Malformed /v1/speak frame'),
-          contains('Flushed frame has no valid sequence_id'),
-          contains('Cleared frame has no valid sequence_id'),
-        ]),
+          expect(await flushed.next, 7);
+          expect(await flushed.next, 42);
+          expect(await flushed.next, 9);
+        },
       );
-      expect(
-        warnings.values.map((TtsWarning w) => w.description),
-        everyElement(contains('sequence_id')),
-      );
-    });
 
-    test(
-        'malformed frames (invalid JSON, non-object, missing or non-string '
-        'type) never crash the pump', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final warnings = _Recorder<TtsWarning>(client.warnings);
-      addTearDown(warnings.dispose);
+      test('Cleared frames surface on the cleared stream', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+        final cleared = _Recorder<int>(client.cleared);
+        addTearDown(cleared.dispose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      conn.sendText('this is not json');
-      conn.sendText('[1, 2, 3]');
-      conn.sendText('{"data":1}');
-      conn.sendText('{"type":42}');
-      conn.sendText('');
+        conn.sendText('{"type":"Cleared","sequence_id":3}');
+        expect(await cleared.next, 3);
+      });
 
-      await warnings.seen(5, (TtsWarning w) => w.code == 'MALFORMED_FRAME');
-      final List<String> descriptions =
-          warnings.values.map((TtsWarning w) => w.description).toList();
-      expect(descriptions[0], contains('frame is not a JSON object'));
-      expect(descriptions[1], contains('frame is not a JSON object'));
-      expect(descriptions[2], contains('frame has no "type" field'));
-      expect(descriptions[3], contains('frame has no "type" field'));
-      expect(descriptions[4], contains('frame is not a JSON object'));
+      test('Warning frames surface as typed TtsWarning', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+        final warnings = _Recorder<TtsWarning>(client.warnings);
+        addTearDown(warnings.dispose);
 
-      // The connection stays usable afterwards.
-      final audio = _Recorder<List<int>>(client.audio);
-      addTearDown(audio.dispose);
-      conn.sendBytes(<int>[7, 7, 7]);
-      expect(await audio.next, <int>[7, 7, 7]);
-    });
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-    test('unknown frame types are ignored with a debug log (no warning)',
+        conn.sendText(
+          jsonEncode(<String, Object>{
+            'type': 'Warning',
+            'code': 'SYNTHESIS_RETRYING',
+            'description': 'Retrying synthesis.',
+          }),
+        );
+
+        final TtsWarning warning = await warnings.next;
+        expect(warning.code, 'SYNTHESIS_RETRYING');
+        expect(warning.description, 'Retrying synthesis.');
+      });
+
+      test('Flushed/Cleared frames without a valid sequence_id are dropped '
+          'with a MALFORMED_FRAME warning', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+        final flushed = _Recorder<int>(client.flushed);
+        addTearDown(flushed.dispose);
+        final cleared = _Recorder<int>(client.cleared);
+        addTearDown(cleared.dispose);
+        final warnings = _Recorder<TtsWarning>(client.warnings);
+        addTearDown(warnings.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        conn.sendText('{"type":"Flushed"}');
+        conn.sendText('{"type":"Flushed","sequence_id":"not-a-number"}');
+        conn.sendText('{"type":"Flushed","sequence_id":true}');
+        conn.sendText('{"type":"Cleared","sequence_id":null}');
+
+        await warnings.seen(4, (TtsWarning w) => w.code == 'MALFORMED_FRAME');
+        expect(flushed.values, isEmpty);
+        expect(cleared.values, isEmpty);
+        expect(
+          harness.logger.warns,
+          containsAll(<Matcher>[
+            contains('Malformed /v1/speak frame'),
+            contains('Flushed frame has no valid sequence_id'),
+            contains('Cleared frame has no valid sequence_id'),
+          ]),
+        );
+        expect(
+          warnings.values.map((TtsWarning w) => w.description),
+          everyElement(contains('sequence_id')),
+        );
+      });
+
+      test('malformed frames (invalid JSON, non-object, missing or non-string '
+          'type) never crash the pump', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+        final warnings = _Recorder<TtsWarning>(client.warnings);
+        addTearDown(warnings.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        conn.sendText('this is not json');
+        conn.sendText('[1, 2, 3]');
+        conn.sendText('{"data":1}');
+        conn.sendText('{"type":42}');
+        conn.sendText('');
+
+        await warnings.seen(5, (TtsWarning w) => w.code == 'MALFORMED_FRAME');
+        final List<String> descriptions = warnings.values
+            .map((TtsWarning w) => w.description)
+            .toList();
+        expect(descriptions[0], contains('frame is not a JSON object'));
+        expect(descriptions[1], contains('frame is not a JSON object'));
+        expect(descriptions[2], contains('frame has no "type" field'));
+        expect(descriptions[3], contains('frame has no "type" field'));
+        expect(descriptions[4], contains('frame is not a JSON object'));
+
+        // The connection stays usable afterwards.
+        final audio = _Recorder<List<int>>(client.audio);
+        addTearDown(audio.dispose);
+        conn.sendBytes(<int>[7, 7, 7]);
+        expect(await audio.next, <int>[7, 7, 7]);
+      });
+
+      test(
+        'unknown frame types are ignored with a debug log (no warning)',
         () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final warnings = _Recorder<TtsWarning>(client.warnings);
-      addTearDown(warnings.dispose);
+          final server = await _LoopbackSpeakServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(wsOptions: _fastWsOptions);
+          addTearDown(client.forceClose);
+          final warnings = _Recorder<TtsWarning>(client.warnings);
+          addTearDown(warnings.dispose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
 
-      conn.sendText('{"type":"SomethingNew","data":"x"}');
+          conn.sendText('{"type":"SomethingNew","data":"x"}');
 
-      await _pumpEventLoop();
-      expect(warnings.values, isEmpty);
-      expect(
-        harness.logger.debugs,
-        contains('Ignoring unknown /v1/speak frame type: SomethingNew'),
+          await _pumpEventLoop();
+          expect(warnings.values, isEmpty);
+          expect(
+            harness.logger.debugs,
+            contains('Ignoring unknown /v1/speak frame type: SomethingNew'),
+          );
+        },
       );
-    });
 
-    test('sendText/flush/clear emit their exact JSON messages', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
+      test('sendText/flush/clear emit their exact JSON messages', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      client.sendText('Hello, ');
-      client.sendText('world!');
-      client.flush();
-      client.clear();
+        client.sendText('Hello, ');
+        client.sendText('world!');
+        client.flush();
+        client.clear();
 
-      expect(await conn.nextFrame(), '{"type":"Speak","text":"Hello, "}');
-      expect(await conn.nextFrame(), '{"type":"Speak","text":"world!"}');
-      expect(await conn.nextFrame(), '{"type":"Flush"}');
-      expect(await conn.nextFrame(), '{"type":"Clear"}');
-    });
+        expect(await conn.nextFrame(), '{"type":"Speak","text":"Hello, "}');
+        expect(await conn.nextFrame(), '{"type":"Speak","text":"world!"}');
+        expect(await conn.nextFrame(), '{"type":"Flush"}');
+        expect(await conn.nextFrame(), '{"type":"Clear"}');
+      });
 
-    test(
-        'user wsOptions are forwarded (KeepAlive heartbeats reach the '
-        'server)', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        wsOptions: const ResilientWebSocketOptions(
-          keepAliveInterval: Duration(milliseconds: 20),
-          minReconnectDelay: Duration(milliseconds: 1),
-          maxReconnectDelay: Duration(milliseconds: 5),
-        ),
-      );
-      addTearDown(client.forceClose);
+      test('user wsOptions are forwarded (KeepAlive heartbeats reach the '
+          'server)', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          wsOptions: const ResilientWebSocketOptions(
+            keepAliveInterval: Duration(milliseconds: 20),
+            minReconnectDelay: Duration(milliseconds: 1),
+            maxReconnectDelay: Duration(milliseconds: 5),
+          ),
+        );
+        addTearDown(client.forceClose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      expect(await conn.nextFrame(), '{"type":"KeepAlive"}');
-      expect(await conn.nextFrame(), '{"type":"KeepAlive"}');
-    });
+        expect(await conn.nextFrame(), '{"type":"KeepAlive"}');
+        expect(await conn.nextFrame(), '{"type":"KeepAlive"}');
+      });
 
-    test('outbound messages are dropped with a warning after close()',
+      test(
+        'outbound messages are dropped with a warning after close()',
         () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
+          final server = await _LoopbackSpeakServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(wsOptions: _fastWsOptions);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
 
-      final Future<void> closing = client.close();
-      expect(await conn.nextFrame(), '{"type":"Close"}');
-      await conn.closeNormally();
-      await closing;
+          final Future<void> closing = client.close();
+          expect(await conn.nextFrame(), '{"type":"Close"}');
+          await conn.closeNormally();
+          await closing;
 
-      client.sendText('too late');
-      client.flush();
-      client.clear();
-      await _pumpEventLoop();
+          client.sendText('too late');
+          client.flush();
+          client.clear();
+          await _pumpEventLoop();
 
-      expect(
-        harness.logger.warns,
-        everyElement(
-          'Dropping outbound TTS message: the session is closed.',
-        ),
+          expect(
+            harness.logger.warns,
+            everyElement(
+              'Dropping outbound TTS message: the session is closed.',
+            ),
+          );
+          expect(harness.logger.warns, hasLength(3));
+          // Only the Close message ever reached the server.
+          expect(conn.frames, <String>['{"type":"Close"}']);
+        },
       );
-      expect(harness.logger.warns, hasLength(3));
-      // Only the Close message ever reached the server.
-      expect(conn.frames, <String>['{"type":"Close"}']);
-    });
 
-    test(
-        'close() sends the Close message, drains final audio, and releases '
-        'the streams', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      final audio = _Recorder<List<int>>(client.audio);
-      addTearDown(audio.dispose);
+      test('close() sends the Close message, drains final audio, and releases '
+          'the streams', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        final audio = _Recorder<List<int>>(client.audio);
+        addTearDown(audio.dispose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      final Future<void> closing = client.close();
-      expect(await conn.nextFrame(), '{"type":"Close"}');
-      // The server flushes the final audio, then closes the socket.
-      conn.sendBytes(<int>[9, 9, 9]);
-      await conn.closeNormally();
-      await closing;
+        final Future<void> closing = client.close();
+        expect(await conn.nextFrame(), '{"type":"Close"}');
+        // The server flushes the final audio, then closes the socket.
+        conn.sendBytes(<int>[9, 9, 9]);
+        await conn.closeNormally();
+        await closing;
 
-      expect(
-        await audio
-            .waitFor((List<int> chunk) => listEquals(chunk, <int>[9, 9, 9])),
-        isNotNull,
-      );
-      await audio.onDone;
-      expect(client.isConnected, isFalse);
-    });
+        expect(
+          await audio.waitFor(
+            (List<int> chunk) => listEquals(chunk, <int>[9, 9, 9]),
+          ),
+          isNotNull,
+        );
+        await audio.onDone;
+        expect(client.isConnected, isFalse);
+      });
 
-    test(
-        'after close(): start() throws DeepgramStateException and close() '
-        'is idempotent', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
+      test('after close(): start() throws DeepgramStateException and close() '
+          'is idempotent', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      final Future<void> closing = client.close();
-      expect(await conn.nextFrame(), '{"type":"Close"}');
-      await conn.closeNormally();
-      await closing;
+        final Future<void> closing = client.close();
+        expect(await conn.nextFrame(), '{"type":"Close"}');
+        await conn.closeNormally();
+        await closing;
 
-      final Object? error = await _failureOf(() => client.start());
-      expect(error, isA<DeepgramStateException>());
-      expect((error! as DeepgramStateException).message,
-          'This TTS session was closed.');
-      await client.close(); // Second close must not throw or hang.
-    });
+        final Object? error = await _failureOf(() => client.start());
+        expect(error, isA<DeepgramStateException>());
+        expect(
+          (error! as DeepgramStateException).message,
+          'This TTS session was closed.',
+        );
+        await client.close(); // Second close must not throw or hang.
+      });
 
-    test(
-        'forceClose() drops the socket immediately without a Close '
-        'message and is idempotent', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
+      test('forceClose() drops the socket immediately without a Close '
+          'message and is idempotent', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      await client.forceClose();
-      await conn.done;
-      await _pumpEventLoop();
+        await client.forceClose();
+        await conn.done;
+        await _pumpEventLoop();
 
-      expect(conn.frames, isEmpty,
-          reason: 'forceClose must not send {"type":"Close"}');
-      expect(client.isConnected, isFalse);
-      expect(states.values, contains(WsConnectionState.closed));
-      await client.forceClose(); // Idempotent.
-    });
+        expect(
+          conn.frames,
+          isEmpty,
+          reason: 'forceClose must not send {"type":"Close"}',
+        );
+        expect(client.isConnected, isFalse);
+        expect(states.values, contains(WsConnectionState.closed));
+        await client.forceClose(); // Idempotent.
+      });
 
-    test('calling start() twice throws DeepgramStateException', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
+      test('calling start() twice throws DeepgramStateException', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
 
-      final connFuture = server.nextConnection();
-      final Future<void> first = client.start();
-      final Object? error = await _failureOf(() => client.start());
-      await first;
-      await connFuture;
+        final connFuture = server.nextConnection();
+        final Future<void> first = client.start();
+        final Object? error = await _failureOf(() => client.start());
+        await first;
+        await connFuture;
 
-      expect(error, isA<DeepgramStateException>());
-      expect((error! as DeepgramStateException).message,
-          'start() was already called.');
-    });
+        expect(error, isA<DeepgramStateException>());
+        expect(
+          (error! as DeepgramStateException).message,
+          'start() was already called.',
+        );
+      });
 
-    test(
-        'start() after a terminal failed state reconnects and opens a new '
-        'session', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
+      test('start() after a terminal failed state reconnects and opens a new '
+          'session', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
 
-      // Two corroborated 401 refusals (probe is up) exhaust the default
-      // failure threshold and surface DeepgramWebSocketException.
-      server.refuseUpgradesRemaining = 2;
-      final Object? error = await _failureOf(() => client.start());
-      expect(error, isA<DeepgramWebSocketException>());
-      final DeepgramWebSocketException wsError =
-          error! as DeepgramWebSocketException;
-      expect(wsError.message, contains('did not open'));
-      expect(wsError.message, contains('failed'));
-      expect(server.refusedUpgrades, 2);
-      expect(
-        states.values,
-        containsAllInOrder(<WsConnectionState>[
-          WsConnectionState.connecting,
-          WsConnectionState.reconnecting,
-          WsConnectionState.failed,
-        ]),
-      );
-      expect(server.plainRequests, isNotEmpty,
-          reason: 'each definitive failure is corroborated with a probe');
+        // Two corroborated 401 refusals (probe is up) exhaust the default
+        // failure threshold and surface DeepgramWebSocketException.
+        server.refuseUpgradesRemaining = 2;
+        final Object? error = await _failureOf(() => client.start());
+        expect(error, isA<DeepgramWebSocketException>());
+        final DeepgramWebSocketException wsError =
+            error! as DeepgramWebSocketException;
+        expect(wsError.message, contains('did not open'));
+        expect(wsError.message, contains('failed'));
+        expect(server.refusedUpgrades, 2);
+        expect(
+          states.values,
+          containsAllInOrder(<WsConnectionState>[
+            WsConnectionState.connecting,
+            WsConnectionState.reconnecting,
+            WsConnectionState.failed,
+          ]),
+        );
+        expect(
+          server.plainRequests,
+          isNotEmpty,
+          reason: 'each definitive failure is corroborated with a probe',
+        );
 
-      // The failed session can be restarted.
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-      expect(client.isConnected, isTrue);
-      client.sendText('reborn');
-      expect(await conn.nextFrame(), '{"type":"Speak","text":"reborn"}');
-    });
+        // The failed session can be restarted.
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+        expect(client.isConnected, isTrue);
+        client.sendText('reborn');
+        expect(await conn.nextFrame(), '{"type":"Speak","text":"reborn"}');
+      });
 
-    test(
-        'start() throws DeepgramWebSocketException when the endpoint is '
-        'unreachable and the policy gives up', () async {
-      // Bind a server, route the harness at it, then close it so the port
-      // refuses connections — fast and deterministic on loopback.
-      final deadServer = await _LoopbackSpeakServer.start();
-      final harness = _Harness(deadServer);
-      await deadServer.shutdown();
+      test('start() throws DeepgramWebSocketException when the endpoint is '
+          'unreachable and the policy gives up', () async {
+        // Bind a server, route the harness at it, then close it so the port
+        // refuses connections — fast and deterministic on loopback.
+        final deadServer = await _LoopbackSpeakServer.start();
+        final harness = _Harness(deadServer);
+        await deadServer.shutdown();
 
-      final client = harness.client(wsOptions: _giveUpWsOptions);
+        final client = harness.client(wsOptions: _giveUpWsOptions);
 
-      final Object? error = await _failureOf(() => client.start());
-      expect(error, isA<DeepgramWebSocketException>());
-      expect((error! as DeepgramWebSocketException).message,
-          contains('did not open'));
-      await client.forceClose();
-    });
+        final Object? error = await _failureOf(() => client.start());
+        expect(error, isA<DeepgramWebSocketException>());
+        expect(
+          (error! as DeepgramWebSocketException).message,
+          contains('did not open'),
+        );
+        await client.forceClose();
+      });
 
-    test(
-        'an unexpected server drop reconnects and the new session carries '
-        'subsequent sends', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
+      test('an unexpected server drop reconnects and the new session carries '
+          'subsequent sends', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-      expect(
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+        expect(
           states.values,
           containsAllInOrder(<WsConnectionState>[
             WsConnectionState.connecting,
             WsConnectionState.open,
-          ]));
+          ]),
+        );
 
-      final conn2Future = server.nextConnection();
-      await conn.drop();
-      final conn2 = await conn2Future;
-      // The server-side upgrade completes slightly before the client
-      // processes the handshake response — wait for the second open.
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
+        final conn2Future = server.nextConnection();
+        await conn.drop();
+        final conn2 = await conn2Future;
+        // The server-side upgrade completes slightly before the client
+        // processes the handshake response — wait for the second open.
+        await states.seen(
+          2,
+          (WsConnectionState s) => s == WsConnectionState.open,
+        );
 
-      expect(client.isConnected, isTrue);
-      expect(
+        expect(client.isConnected, isTrue);
+        expect(
           states.values,
           containsAllInOrder(<WsConnectionState>[
             WsConnectionState.reconnecting,
             WsConnectionState.open,
-          ]));
+          ]),
+        );
 
-      client.sendText('after reconnect');
-      expect(
-          await conn2.nextFrame(), '{"type":"Speak","text":"after reconnect"}');
-    });
+        client.sendText('after reconnect');
+        expect(
+          await conn2.nextFrame(),
+          '{"type":"Speak","text":"after reconnect"}',
+        );
+      });
 
-    test(
-        'constructs without an injected logger (falls back to '
-        'config.logger, then a fresh DeepgramLogger)', () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
+      test('constructs without an injected logger (falls back to '
+          'config.logger, then a fresh DeepgramLogger)', () async {
+        final server = await _LoopbackSpeakServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
 
-      // No logger anywhere: the constructor takes the DeepgramLogger()
-      // fallback without connecting.
-      final bare = TtsStreamClient(
-        config: harness.config,
-        auth: harness.auth,
-        http: harness.httpEngine,
-        wsOptions: _fastWsOptions,
-      );
-      addTearDown(bare.forceClose);
-      expect(bare.isConnected, isFalse);
+        // No logger anywhere: the constructor takes the DeepgramLogger()
+        // fallback without connecting.
+        final bare = TtsStreamClient(
+          config: harness.config,
+          auth: harness.auth,
+          http: harness.httpEngine,
+          wsOptions: _fastWsOptions,
+        );
+        addTearDown(bare.forceClose);
+        expect(bare.isConnected, isFalse);
 
-      // A config-level logger is picked up when no client logger is given.
-      final configLogger = RecordingLogger();
-      final client = TtsStreamClient(
-        config: DeepgramConfig(
-          apiKey: 'test-api-key',
-          baseUrl: _deepgramTestHost,
-          useTls: false,
-          logger: configLogger,
-        ),
-        auth: DeepgramAuth(harness.config),
-        http: harness.httpEngine,
-        wsOptions: _fastWsOptions,
-      );
-      addTearDown(client.forceClose);
-      expect(client.isConnected, isFalse);
-      expect(configLogger.debugs, isEmpty);
-    });
+        // A config-level logger is picked up when no client logger is given.
+        final configLogger = RecordingLogger();
+        final client = TtsStreamClient(
+          config: DeepgramConfig(
+            apiKey: 'test-api-key',
+            baseUrl: _deepgramTestHost,
+            useTls: false,
+            logger: configLogger,
+          ),
+          auth: DeepgramAuth(harness.config),
+          http: harness.httpEngine,
+          wsOptions: _fastWsOptions,
+        );
+        addTearDown(client.forceClose);
+        expect(client.isConnected, isFalse);
+        expect(configLogger.debugs, isEmpty);
+      });
 
-    test('sendText before start() is silently dropped (nothing is sent)',
+      test(
+        'sendText before start() is silently dropped (nothing is sent)',
         () async {
-      final server = await _LoopbackSpeakServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
+          final server = await _LoopbackSpeakServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(wsOptions: _fastWsOptions);
+          addTearDown(client.forceClose);
 
-      client.sendText('never started');
-      client.flush();
+          client.sendText('never started');
+          client.flush();
 
-      await _pumpEventLoop();
-      expect(server.connections, isEmpty);
-    });
-  });
+          await _pumpEventLoop();
+          expect(server.connections, isEmpty);
+        },
+      );
+    },
+  );
 }

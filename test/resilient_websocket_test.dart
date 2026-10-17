@@ -255,85 +255,88 @@ void main() {
   });
 
   group('happy path', () {
-    test('connect opens the session, authenticates, and round-trips frames',
-        () async {
-      final factory = FakeWsFactory();
-      final socket = factory.enqueueSocket();
-      final ws = _makeWs(factory);
-      final states = _recordStates(ws);
-      final received = _recordMessages(ws);
+    test(
+      'connect opens the session, authenticates, and round-trips frames',
+      () async {
+        final factory = FakeWsFactory();
+        final socket = factory.enqueueSocket();
+        final ws = _makeWs(factory);
+        final states = _recordStates(ws);
+        final received = _recordMessages(ws);
 
-      expect(ws.state, WsConnectionState.idle);
-      expect(ws.isConnected, isFalse);
-      expect(ws.reconnectAttempts, 0);
-      expect(ws.isClosedByUser, isFalse);
+        expect(ws.state, WsConnectionState.idle);
+        expect(ws.isConnected, isFalse);
+        expect(ws.reconnectAttempts, 0);
+        expect(ws.isClosedByUser, isFalse);
 
-      final session = ws.connect();
-      await _becomes(ws, WsConnectionState.open);
+        final session = ws.connect();
+        await _becomes(ws, WsConnectionState.open);
 
-      // The factory saw the URI, the API-key auth header and the configured
-      // connect budget.
-      expect(factory.connectCalls, 1);
-      expect(factory.uris.single, _listenUri);
-      expect(factory.authorizationHeaders.single, 'Token test-api-key');
-      expect(
-        factory.connectTimeouts.single,
-        const Duration(milliseconds: 250),
-      );
+        // The factory saw the URI, the API-key auth header and the configured
+        // connect budget.
+        expect(factory.connectCalls, 1);
+        expect(factory.uris.single, _listenUri);
+        expect(factory.authorizationHeaders.single, 'Token test-api-key');
+        expect(
+          factory.connectTimeouts.single,
+          const Duration(milliseconds: 250),
+        );
 
-      expect(ws.isConnected, isTrue);
-      expect(ws.connectedAt, isNotNull);
-      expect(ws.connectedAt!.isUtc, isTrue);
-      expect(ws.connectionLostAt, isNull);
+        expect(ws.isConnected, isTrue);
+        expect(ws.connectedAt, isNotNull);
+        expect(ws.connectedAt!.isUtc, isTrue);
+        expect(ws.connectionLostAt, isNull);
 
-      // Inbound round-trip: text and binary frames with typed accessors.
-      socket.emit('{"type":"Metadata"}');
-      socket.emit(<int>[1, 2, 3]);
-      await _eventually(() => received.length == 2, 'both frames delivered');
-      expect(received.first.isText, isTrue);
-      expect(received.first.text, '{"type":"Metadata"}');
-      expect(received.first.bytes, isNull);
-      expect(received.last.isBinary, isTrue);
-      expect(received.last.bytes, <int>[1, 2, 3]);
-      expect(received.last.text, isNull);
+        // Inbound round-trip: text and binary frames with typed accessors.
+        socket.emit('{"type":"Metadata"}');
+        socket.emit(<int>[1, 2, 3]);
+        await _eventually(() => received.length == 2, 'both frames delivered');
+        expect(received.first.isText, isTrue);
+        expect(received.first.text, '{"type":"Metadata"}');
+        expect(received.first.bytes, isNull);
+        expect(received.last.isBinary, isTrue);
+        expect(received.last.bytes, <int>[1, 2, 3]);
+        expect(received.last.text, isNull);
 
-      // Outbound round-trip: text and binary frames.
-      ws.send('hello');
-      ws.sendBytes(<int>[9, 9]);
-      expect(
+        // Outbound round-trip: text and binary frames.
+        ws.send('hello');
+        ws.sendBytes(<int>[9, 9]);
+        expect(
           socket.sent,
           containsAll(<Object>[
             'hello',
-            <int>[9, 9]
-          ]));
+            <int>[9, 9],
+          ]),
+        );
 
-      // connect() while already open resolves immediately (guarded no-op).
-      await ws.connect().timeout(_deadline);
+        // connect() while already open resolves immediately (guarded no-op).
+        await ws.connect().timeout(_deadline);
 
-      await ws.close(drainTimeout: _drain);
-      await session.timeout(_deadline);
-      await _flush();
+        await ws.close(drainTimeout: _drain);
+        await session.timeout(_deadline);
+        await _flush();
 
-      expect(ws.state, WsConnectionState.closed);
-      expect(ws.isClosedByUser, isTrue);
-      expect(ws.isConnected, isFalse);
-      expect(ws.connectedAt, isNull);
-      expect(
-        states,
-        containsAllInOrder(<WsConnectionState>[
-          WsConnectionState.connecting,
-          WsConnectionState.open,
-          WsConnectionState.closed,
-        ]),
-      );
+        expect(ws.state, WsConnectionState.closed);
+        expect(ws.isClosedByUser, isTrue);
+        expect(ws.isConnected, isFalse);
+        expect(ws.connectedAt, isNull);
+        expect(
+          states,
+          containsAllInOrder(<WsConnectionState>[
+            WsConnectionState.connecting,
+            WsConnectionState.open,
+            WsConnectionState.closed,
+          ]),
+        );
 
-      // Sends after close are silent no-ops: nothing reaches the retired
-      // socket and nothing throws.
-      final sentLength = socket.sent.length;
-      ws.send('after-close');
-      ws.sendBytes(<int>[7]);
-      expect(socket.sent, hasLength(sentLength));
-    });
+        // Sends after close are silent no-ops: nothing reaches the retired
+        // socket and nothing throws.
+        final sentLength = socket.sent.length;
+        ws.send('after-close');
+        ws.sendBytes(<int>[7]);
+        expect(socket.sent, hasLength(sentLength));
+      },
+    );
 
     test('uses Bearer auth when the config carries a JWT', () async {
       final factory = FakeWsFactory();
@@ -371,8 +374,7 @@ void main() {
       expect(socket.sent, hasLength(sentLength));
     });
 
-    test(
-        'falls back to the default factory and real probe when none are '
+    test('falls back to the default factory and real probe when none are '
         'injected', () async {
       // Construction only: the default WsFactory (IoWsFactory on VM) and the
       // real ConnectivityProbe are built lazily — nothing touches the
@@ -392,29 +394,31 @@ void main() {
       expect(ws.state, WsConnectionState.closed);
     });
 
-    test('connectTimeout is delegated to the factory; readiness is not awaited',
-        () async {
-      final factory = FakeWsFactory();
-      // This fake socket's `ready` never completes.
-      final socket = factory.enqueueSocket();
-      final ws = _makeWs(factory);
+    test(
+      'connectTimeout is delegated to the factory; readiness is not awaited',
+      () async {
+        final factory = FakeWsFactory();
+        // This fake socket's `ready` never completes.
+        final socket = factory.enqueueSocket();
+        final ws = _makeWs(factory);
 
-      unawaited(ws.connect());
-      await _becomes(ws, WsConnectionState.open);
-      expect(
-        factory.connectTimeouts.single,
-        const Duration(milliseconds: 250),
-      );
+        unawaited(ws.connect());
+        await _becomes(ws, WsConnectionState.open);
+        expect(
+          factory.connectTimeouts.single,
+          const Duration(milliseconds: 250),
+        );
 
-      // The session layer treats the socket returned by the factory as live:
-      // handshake timeouts belong to the factory (IoWsFactory awaits `ready`
-      // with the same budget), not to the session's run loop.
-      expect(ws.isConnected, isTrue);
-      ws.send('hi');
-      expect(socket.sent, contains('hi'));
+        // The session layer treats the socket returned by the factory as live:
+        // handshake timeouts belong to the factory (IoWsFactory awaits `ready`
+        // with the same budget), not to the session's run loop.
+        expect(ws.isConnected, isTrue);
+        ws.send('hi');
+        expect(socket.sent, contains('hi'));
 
-      await ws.close(drainTimeout: _drain);
-    });
+        await ws.close(drainTimeout: _drain);
+      },
+    );
   });
 
   group('keepalive heartbeat', () {
@@ -474,42 +478,44 @@ void main() {
       await ws.close(drainTimeout: _drain);
     });
 
-    test('is suppressed by user traffic when sendKeepAliveOnlyWhenIdle',
-        () async {
-      final factory = FakeWsFactory();
-      final socket = factory.enqueueSocket();
-      const ping = '{"type":"Ping"}';
-      final ws = _makeWs(
-        factory,
-        options: const ResilientWebSocketOptions(
-          keepAliveInterval: Duration(milliseconds: 50),
-          keepAliveMessage: ping,
-          sendKeepAliveOnlyWhenIdle: true,
-          minReconnectDelay: Duration(milliseconds: 5),
-          maxReconnectDelay: Duration(milliseconds: 50),
-          connectTimeout: Duration(milliseconds: 250),
-        ),
-      );
+    test(
+      'is suppressed by user traffic when sendKeepAliveOnlyWhenIdle',
+      () async {
+        final factory = FakeWsFactory();
+        final socket = factory.enqueueSocket();
+        const ping = '{"type":"Ping"}';
+        final ws = _makeWs(
+          factory,
+          options: const ResilientWebSocketOptions(
+            keepAliveInterval: Duration(milliseconds: 50),
+            keepAliveMessage: ping,
+            sendKeepAliveOnlyWhenIdle: true,
+            minReconnectDelay: Duration(milliseconds: 5),
+            maxReconnectDelay: Duration(milliseconds: 50),
+            connectTimeout: Duration(milliseconds: 250),
+          ),
+        );
 
-      unawaited(ws.connect());
-      await _becomes(ws, WsConnectionState.open);
+        unawaited(ws.connect());
+        await _becomes(ws, WsConnectionState.open);
 
-      // Continuous outbound traffic: every tick sees recent activity and is
-      // suppressed.
-      for (var i = 0; i < 30; i++) {
-        ws.send('chunk-$i');
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-      }
-      expect(socket.sent.where((Object s) => s == ping), isEmpty);
+        // Continuous outbound traffic: every tick sees recent activity and is
+        // suppressed.
+        for (var i = 0; i < 30; i++) {
+          ws.send('chunk-$i');
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+        expect(socket.sent.where((Object s) => s == ping), isEmpty);
 
-      // Once idle for a full interval, the heartbeat resumes.
-      await _eventually(
-        () => socket.sent.contains(ping),
-        'heartbeat to resume once idle',
-      );
+        // Once idle for a full interval, the heartbeat resumes.
+        await _eventually(
+          () => socket.sent.contains(ping),
+          'heartbeat to resume once idle',
+        );
 
-      await ws.close(drainTimeout: _drain);
-    });
+        await ws.close(drainTimeout: _drain);
+      },
+    );
 
     test('is disabled entirely by a zero keepAliveInterval', () async {
       final factory = FakeWsFactory();
@@ -604,7 +610,9 @@ void main() {
       expect(capturedReconnect.classification, isNull);
       expect(capturedReconnect.internetUp, isNull);
       expect(
-          capturedReconnect.nextDelay.inMilliseconds, inInclusiveRange(3, 8));
+        capturedReconnect.nextDelay.inMilliseconds,
+        inInclusiveRange(3, 8),
+      );
 
       await _becomes(ws, WsConnectionState.open);
 
@@ -716,60 +724,63 @@ void main() {
   });
 
   group('connect failure classification', () {
-    test('repeated corroborated definitive failures give up as failed',
-        () async {
-      final factory = FakeWsFactory()
-        ..enqueueError(WebSocketException('server did not upgrade'))
-        ..enqueueError(WebSocketException('server did not upgrade'));
-      final probe = _CountingProbe();
-      final reconnectCtxs = <WsReconnectContext>[];
-      final ws = _makeWs(
-        factory,
-        probe: probe,
-        options: ResilientWebSocketOptions(
-          keepAliveInterval: const Duration(minutes: 30),
-          minReconnectDelay: const Duration(milliseconds: 5),
-          maxReconnectDelay: const Duration(milliseconds: 50),
-          connectTimeout: const Duration(milliseconds: 250),
-          corroboratedFailureThreshold: 2,
-          onReconnecting: reconnectCtxs.add,
-        ),
-      );
-      final states = _recordStates(ws);
+    test(
+      'repeated corroborated definitive failures give up as failed',
+      () async {
+        final factory = FakeWsFactory()
+          ..enqueueError(WebSocketException('server did not upgrade'))
+          ..enqueueError(WebSocketException('server did not upgrade'));
+        final probe = _CountingProbe();
+        final reconnectCtxs = <WsReconnectContext>[];
+        final ws = _makeWs(
+          factory,
+          probe: probe,
+          options: ResilientWebSocketOptions(
+            keepAliveInterval: const Duration(minutes: 30),
+            minReconnectDelay: const Duration(milliseconds: 5),
+            maxReconnectDelay: const Duration(milliseconds: 50),
+            connectTimeout: const Duration(milliseconds: 250),
+            corroboratedFailureThreshold: 2,
+            onReconnecting: reconnectCtxs.add,
+          ),
+        );
+        final states = _recordStates(ws);
 
-      final session = ws.connect();
-      await _becomes(ws, WsConnectionState.failed);
-      await session.timeout(_deadline);
+        final session = ws.connect();
+        await _becomes(ws, WsConnectionState.failed);
+        await session.timeout(_deadline);
 
-      // First definitive failure retried (corroborated count 1 < 2), second
-      // one gave up — without ever consulting a shouldReconnect callback.
-      expect(factory.connectCalls, 2);
-      expect(probe.calls, 2);
-      expect(reconnectCtxs, hasLength(1));
-      expect(reconnectCtxs.single.attempt, 1);
-      expect(
-        reconnectCtxs.single.classification,
-        WsFailureClassification.deepgramDefinitive,
-      );
-      expect(reconnectCtxs.single.internetUp, isTrue);
+        // First definitive failure retried (corroborated count 1 < 2), second
+        // one gave up — without ever consulting a shouldReconnect callback.
+        expect(factory.connectCalls, 2);
+        expect(probe.calls, 2);
+        expect(reconnectCtxs, hasLength(1));
+        expect(reconnectCtxs.single.attempt, 1);
+        expect(
+          reconnectCtxs.single.classification,
+          WsFailureClassification.deepgramDefinitive,
+        );
+        expect(reconnectCtxs.single.internetUp, isTrue);
 
-      expect(ws.reconnectAttempts, 2);
-      // The loss anchor is set even though no connection was ever open.
-      expect(ws.connectionLostAt, isNotNull);
-      await _flush();
-      expect(
-        states,
-        containsAllInOrder(<WsConnectionState>[
-          WsConnectionState.connecting,
-          WsConnectionState.reconnecting,
-          WsConnectionState.failed,
-        ]),
-      );
-    });
+        expect(ws.reconnectAttempts, 2);
+        // The loss anchor is set even though no connection was ever open.
+        expect(ws.connectionLostAt, isNotNull);
+        await _flush();
+        expect(
+          states,
+          containsAllInOrder(<WsConnectionState>[
+            WsConnectionState.connecting,
+            WsConnectionState.reconnecting,
+            WsConnectionState.failed,
+          ]),
+        );
+      },
+    );
 
     test('ambiguous failures with the internet down keep retrying', () async {
-      final factory =
-          _ScriptedWsFactory(alwaysThrow: Exception('tls handshake failed'));
+      final factory = _ScriptedWsFactory(
+        alwaysThrow: Exception('tls handshake failed'),
+      );
       final probe = FakeProbe(result: false); // internet suspect
       final reconnectCtxs = <WsReconnectContext>[];
       final ws = _makeWs(
@@ -927,8 +938,7 @@ void main() {
       expect(ws.connectionLostAt, isNotNull);
     });
 
-    test(
-        'maxReconnectAttempts caps failed dials and reports timeouts as '
+    test('maxReconnectAttempts caps failed dials and reports timeouts as '
         'internetSuspect', () async {
       final timeout = TimeoutException('Connection timed out');
       final factory = FakeWsFactory()
@@ -1018,8 +1028,7 @@ void main() {
   });
 
   group('generation tokens', () {
-    test(
-        'closing during a backoff kills the chain; a superseded chain cannot '
+    test('closing during a backoff kills the chain; a superseded chain cannot '
         'resurrect', () async {
       final factory = FakeWsFactory()
         ..enqueueError(Exception('first dial failed'));
@@ -1112,8 +1121,7 @@ void main() {
       );
     });
 
-    test(
-        'a dial error that lands after close() is discarded by the dead '
+    test('a dial error that lands after close() is discarded by the dead '
         'chain', () async {
       final factory = _ScriptedWsFactory(
         alwaysThrow: Exception('late failure'),
@@ -1143,45 +1151,46 @@ void main() {
   });
 
   group('graceful close and dispose', () {
-    test('close(closeMessage) sends CloseStream, drains, then reports closed',
-        () async {
-      final factory = FakeWsFactory();
-      final socket = factory.enqueueSocket();
-      final ws = _makeWs(factory);
-      final received = _recordMessages(ws);
-
-      unawaited(ws.connect());
-      await _becomes(ws, WsConnectionState.open);
-
-      final closing = ws.close(
-        closeMessage: '{"type":"CloseStream"}',
-        drainTimeout: const Duration(milliseconds: 500),
-      );
-
-      // The close message went out immediately, before any waiting.
-      expect(socket.sent, contains('{"type":"CloseStream"}'));
-
-      // While draining the session is still open and still receives the
-      // server's final flushed results.
-      socket.emit('{"type":"FinalTranscript"}');
-      await Future<void>.delayed(const Duration(milliseconds: 30));
-      expect(ws.state, WsConnectionState.open);
-      var closed = false;
-      unawaited(closing.then((_) => closed = true));
-      expect(closed, isFalse, reason: 'server has not finished yet');
-
-      // The server finishes: the stream ends, the drain completes.
-      socket.serverClose();
-      await closing.timeout(_deadline);
-
-      expect(ws.state, WsConnectionState.closed);
-      expect(ws.isClosedByUser, isTrue);
-      expect(ws.connectedAt, isNull);
-      expect(received.last.text, '{"type":"FinalTranscript"}');
-    });
-
     test(
-        'close() on a never-connected session reports closed and is '
+      'close(closeMessage) sends CloseStream, drains, then reports closed',
+      () async {
+        final factory = FakeWsFactory();
+        final socket = factory.enqueueSocket();
+        final ws = _makeWs(factory);
+        final received = _recordMessages(ws);
+
+        unawaited(ws.connect());
+        await _becomes(ws, WsConnectionState.open);
+
+        final closing = ws.close(
+          closeMessage: '{"type":"CloseStream"}',
+          drainTimeout: const Duration(milliseconds: 500),
+        );
+
+        // The close message went out immediately, before any waiting.
+        expect(socket.sent, contains('{"type":"CloseStream"}'));
+
+        // While draining the session is still open and still receives the
+        // server's final flushed results.
+        socket.emit('{"type":"FinalTranscript"}');
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(ws.state, WsConnectionState.open);
+        var closed = false;
+        unawaited(closing.then((_) => closed = true));
+        expect(closed, isFalse, reason: 'server has not finished yet');
+
+        // The server finishes: the stream ends, the drain completes.
+        socket.serverClose();
+        await closing.timeout(_deadline);
+
+        expect(ws.state, WsConnectionState.closed);
+        expect(ws.isClosedByUser, isTrue);
+        expect(ws.connectedAt, isNull);
+        expect(received.last.text, '{"type":"FinalTranscript"}');
+      },
+    );
+
+    test('close() on a never-connected session reports closed and is '
         'idempotent', () async {
       final factory = FakeWsFactory();
       final ws = _makeWs(factory);
@@ -1268,8 +1277,10 @@ void main() {
       var messageDone = false;
       var stateDone = false;
       ws.messages.listen((WsMessage _) {}, onDone: () => messageDone = true);
-      ws.states
-          .listen((WsConnectionState _) {}, onDone: () => stateDone = true);
+      ws.states.listen(
+        (WsConnectionState _) {},
+        onDone: () => stateDone = true,
+      );
       await Future<void>.delayed(_tick);
       expect(messageDone, isTrue);
       expect(stateDone, isTrue);
@@ -1311,8 +1322,9 @@ void main() {
         isTrue,
       );
       expect(
-        logger.warns
-            .any((String m) => m.contains('Failed to send binary frame')),
+        logger.warns.any(
+          (String m) => m.contains('Failed to send binary frame'),
+        ),
         isTrue,
       );
 

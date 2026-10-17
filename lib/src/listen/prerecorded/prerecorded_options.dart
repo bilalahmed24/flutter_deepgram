@@ -340,8 +340,9 @@ class PrerecordedOptions {
 
     // Smart Format implies punctuation; never send punctuate alongside it.
     if (smartFormat == true) {
-      query['smart_format'] =
-          fmtMedium == null ? 'true' : <String>['true', fmtMedium!];
+      query['smart_format'] = fmtMedium == null
+          ? 'true'
+          : <String>['true', fmtMedium!];
     } else if (smartFormat != null) {
       query['smart_format'] = _boolStr(smartFormat!);
     }

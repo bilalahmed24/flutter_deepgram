@@ -182,11 +182,14 @@ void main() {
   group('wsUri and agentWsUri', () {
     test('builds the media WebSocket URI, with or without query', () {
       const config = DeepgramConfig(apiKey: 'k');
-      expect(config.wsUri('/v1/listen'),
-          Uri.parse('wss://api.deepgram.com/v1/listen'));
       expect(
-        config
-            .wsUri('/v2/listen', <String, dynamic>{'model': 'flux-general-en'}),
+        config.wsUri('/v1/listen'),
+        Uri.parse('wss://api.deepgram.com/v1/listen'),
+      );
+      expect(
+        config.wsUri('/v2/listen', <String, dynamic>{
+          'model': 'flux-general-en',
+        }),
         Uri.parse('wss://api.deepgram.com/v2/listen?model=flux-general-en'),
       );
     });
@@ -398,8 +401,10 @@ void main() {
     });
 
     test('prefers an explicit probeUrl', () {
-      const config =
-          DeepgramConfig(apiKey: 'k', probeUrl: 'https://example.org/health');
+      const config = DeepgramConfig(
+        apiKey: 'k',
+        probeUrl: 'https://example.org/health',
+      );
       expect(config.effectiveProbeUrl, 'https://example.org/health');
     });
   });

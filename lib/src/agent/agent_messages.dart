@@ -41,14 +41,16 @@ List<AgentFunctionCallRecord>? _parseFunctionCallRecords(dynamic value) {
   final out = <AgentFunctionCallRecord>[];
   for (final item in value) {
     if (item is Map<String, dynamic>) {
-      out.add(AgentFunctionCallRecord(
-        id: _stringOrNull(item['id']) ?? '',
-        name: _stringOrNull(item['name']) ?? '',
-        arguments: _stringOrNull(item['arguments']) ?? '',
-        response: _stringOrNull(item['response']),
-        clientSide: _boolOrFalse(item['client_side']),
-        thoughtSignature: _stringOrNull(item['thought_signature']),
-      ));
+      out.add(
+        AgentFunctionCallRecord(
+          id: _stringOrNull(item['id']) ?? '',
+          name: _stringOrNull(item['name']) ?? '',
+          arguments: _stringOrNull(item['arguments']) ?? '',
+          response: _stringOrNull(item['response']),
+          clientSide: _boolOrFalse(item['client_side']),
+          thoughtSignature: _stringOrNull(item['thought_signature']),
+        ),
+      );
     }
   }
   return out;
@@ -67,9 +69,9 @@ class AgentWelcome {
 
   /// Parses a `Welcome` frame defensively.
   factory AgentWelcome.fromJson(Map<String, dynamic> json) => AgentWelcome(
-        requestId: _stringOrNull(json['request_id']) ?? '',
-        raw: json,
-      );
+    requestId: _stringOrNull(json['request_id']) ?? '',
+    raw: json,
+  );
 }
 
 /// The `SettingsApplied` frame confirming the server accepted the Settings.

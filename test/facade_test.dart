@@ -24,52 +24,50 @@ void main() {
       expect(client.logger, isA<DeepgramLogger>());
       expect(client.auth, isA<DeepgramAuth>());
       expect(client.auth.usesApiKey, isTrue);
-      expect(
-        await client.auth.authorizationHeader(),
-        'Token key-1',
-      );
+      expect(await client.auth.authorizationHeader(), 'Token key-1');
     });
 
-    test('replaces the credentials but keeps the supplied config settings',
-        () async {
-      final logger = DeepgramLogger();
-      final client = DeepgramClient(
-        apiKey: 'new-key',
-        config: DeepgramConfig(
-          apiKey: 'old-key',
-          jwt: 'old-jwt',
-          baseUrl: 'api.staging.example',
-          agentBaseUrl: 'agent.staging.example',
-          useTls: false,
-          maxRetries: 7,
-          requestTimeout: const Duration(seconds: 11),
-          retryBaseDelay: const Duration(milliseconds: 12),
-          logger: logger,
-        ),
-      );
-      expect(client.config.apiKey, 'new-key');
-      // copyWith only swaps the API key; the jwt survives.
-      expect(client.config.jwt, 'old-jwt');
-      expect(client.config.baseUrl, 'api.staging.example');
-      expect(client.config.agentBaseUrl, 'agent.staging.example');
-      expect(client.config.useTls, isFalse);
-      expect(client.config.maxRetries, 7);
-      expect(client.config.requestTimeout, const Duration(seconds: 11));
-      expect(client.config.retryBaseDelay, const Duration(milliseconds: 12));
-      expect(identical(client.logger, logger), isTrue);
-      // With both a jwt and an apiKey present, Bearer wins (documented
-      // precedence in DeepgramAuth).
-      expect(
-        await client.auth.authorizationHeader(),
-        'Bearer old-jwt',
-      );
-    });
+    test(
+      'replaces the credentials but keeps the supplied config settings',
+      () async {
+        final logger = DeepgramLogger();
+        final client = DeepgramClient(
+          apiKey: 'new-key',
+          config: DeepgramConfig(
+            apiKey: 'old-key',
+            jwt: 'old-jwt',
+            baseUrl: 'api.staging.example',
+            agentBaseUrl: 'agent.staging.example',
+            useTls: false,
+            maxRetries: 7,
+            requestTimeout: const Duration(seconds: 11),
+            retryBaseDelay: const Duration(milliseconds: 12),
+            logger: logger,
+          ),
+        );
+        expect(client.config.apiKey, 'new-key');
+        // copyWith only swaps the API key; the jwt survives.
+        expect(client.config.jwt, 'old-jwt');
+        expect(client.config.baseUrl, 'api.staging.example');
+        expect(client.config.agentBaseUrl, 'agent.staging.example');
+        expect(client.config.useTls, isFalse);
+        expect(client.config.maxRetries, 7);
+        expect(client.config.requestTimeout, const Duration(seconds: 11));
+        expect(client.config.retryBaseDelay, const Duration(milliseconds: 12));
+        expect(identical(client.logger, logger), isTrue);
+        // With both a jwt and an apiKey present, Bearer wins (documented
+        // precedence in DeepgramAuth).
+        expect(await client.auth.authorizationHeader(), 'Bearer old-jwt');
+      },
+    );
   });
 
   group('DeepgramClient.withConfig', () {
     test('keeps the exact config instance and derives logger and auth', () {
-      final config =
-          DeepgramConfig(apiKey: 'k', baseUrl: 'api.staging.example');
+      final config = DeepgramConfig(
+        apiKey: 'k',
+        baseUrl: 'api.staging.example',
+      );
       final client = DeepgramClient.withConfig(config);
       addTearDown(client.close);
       expect(identical(client.config, config), isTrue);
@@ -102,20 +100,22 @@ void main() {
   });
 
   group('DeepgramClient.withTokenProvider', () {
-    test('authenticates through the provider and blanks static credentials',
-        () async {
-      final client = DeepgramClient.withTokenProvider(
-        tokenProvider: () async => 'minted',
-      );
-      expect(client.auth.usesTokenProvider, isTrue);
-      // usesStaticJwt is a null-check, and withTokenProvider leaves an
-      // empty-string jwt on the config — not a null one.
-      expect(client.auth.usesStaticJwt, isTrue);
-      expect(await client.auth.authorizationHeader(), 'Bearer minted');
-      expect(client.config.apiKey, '');
-      expect(client.config.jwt, '');
-      expect(client.config.baseUrl, 'api.deepgram.com');
-    });
+    test(
+      'authenticates through the provider and blanks static credentials',
+      () async {
+        final client = DeepgramClient.withTokenProvider(
+          tokenProvider: () async => 'minted',
+        );
+        expect(client.auth.usesTokenProvider, isTrue);
+        // usesStaticJwt is a null-check, and withTokenProvider leaves an
+        // empty-string jwt on the config — not a null one.
+        expect(client.auth.usesStaticJwt, isTrue);
+        expect(await client.auth.authorizationHeader(), 'Bearer minted');
+        expect(client.config.apiKey, '');
+        expect(client.config.jwt, '');
+        expect(client.config.baseUrl, 'api.deepgram.com');
+      },
+    );
 
     test('keeps the non-credential settings of the supplied config', () {
       final logger = DeepgramLogger();
@@ -224,10 +224,7 @@ void main() {
       expect(identical(agent.http, client.http), isTrue);
       expect(agent.isConnected, isFalse);
       expect(agent.reconnectAttempts, 0);
-      expect(
-        identical(client.createVoiceAgent(), agent),
-        isFalse,
-      );
+      expect(identical(client.createVoiceAgent(), agent), isFalse);
     });
 
     test('forward websocket options without connecting', () {
@@ -263,11 +260,13 @@ void main() {
       final client = DeepgramClient(apiKey: 'k')..close();
       expect(
         () => client.createVoiceAgent(),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          'DeepgramClient.close() was already called.',
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            'DeepgramClient.close() was already called.',
+          ),
+        ),
       );
     });
 

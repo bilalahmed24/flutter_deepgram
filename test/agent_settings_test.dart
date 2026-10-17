@@ -108,28 +108,30 @@ void main() {
       final settings = VoiceAgentSettings(
         agent: AgentAgentSettings(
           greeting: 'Hello! How can I help?',
-          context: AgentContext(messages: <AgentHistoryMessage>[
-            const AgentHistoryMessage.text(
-              role: 'user',
-              content: 'I need a cab to the airport.',
-            ),
-            AgentHistoryMessage.functionCalls(
-              calls: <AgentFunctionCallRecord>[
-                const AgentFunctionCallRecord(
-                  id: 'call-1',
-                  name: 'book_cab',
-                  arguments: '{"destination":"SFO"}',
-                  response: '{"eta_minutes":9}',
-                  clientSide: true,
-                  thoughtSignature: 'sig-abc',
-                ),
-              ],
-            ),
-            const AgentHistoryMessage.text(
-              role: 'assistant',
-              content: 'Your cab arrives in 9 minutes.',
-            ),
-          ]),
+          context: AgentContext(
+            messages: <AgentHistoryMessage>[
+              const AgentHistoryMessage.text(
+                role: 'user',
+                content: 'I need a cab to the airport.',
+              ),
+              AgentHistoryMessage.functionCalls(
+                calls: <AgentFunctionCallRecord>[
+                  const AgentFunctionCallRecord(
+                    id: 'call-1',
+                    name: 'book_cab',
+                    arguments: '{"destination":"SFO"}',
+                    response: '{"eta_minutes":9}',
+                    clientSide: true,
+                    thoughtSignature: 'sig-abc',
+                  ),
+                ],
+              ),
+              const AgentHistoryMessage.text(
+                role: 'assistant',
+                content: 'Your cab arrives in 9 minutes.',
+              ),
+            ],
+          ),
           listen: const AgentListen(
             provider: AgentListenProvider.v1(
               model: 'nova-3',
@@ -171,10 +173,7 @@ void main() {
             ],
           ),
           speak: const AgentSpeak(
-            provider: AgentSpeakProvider(
-              model: 'aura-2-thalia-en',
-              speed: 1.1,
-            ),
+            provider: AgentSpeakProvider(model: 'aura-2-thalia-en', speed: 1.1),
           ),
           language: 'en',
         ),
@@ -203,10 +202,7 @@ void main() {
         'mip_opt_out': true,
         'flags': <String, dynamic>{'history': false},
         'audio': <String, dynamic>{
-          'input': <String, dynamic>{
-            'encoding': 'opus',
-            'sample_rate': 48000,
-          },
+          'input': <String, dynamic>{'encoding': 'opus', 'sample_rate': 48000},
           'output': <String, dynamic>{
             'encoding': 'mp3',
             'sample_rate': 44100,
@@ -382,22 +378,24 @@ void main() {
       expect(json.containsKey('bit_rate'), isFalse);
     });
 
-    test('emits the bitrate under the AsyncAPI key `bitrate` (no underscore)',
-        () {
-      final json = const AgentAudioOutput(
-        encoding: AgentAudioOutputEncoding.opus,
-        sampleRate: 24000,
-        container: AgentAudioOutputContainer.none,
-        bitRate: 64000,
-      ).toJson();
-      expect(json, <String, dynamic>{
-        'encoding': 'opus',
-        'sample_rate': 24000,
-        'container': 'none',
-        'bitrate': 64000,
-      });
-      expect(json.containsKey('bit_rate'), isFalse);
-    });
+    test(
+      'emits the bitrate under the AsyncAPI key `bitrate` (no underscore)',
+      () {
+        final json = const AgentAudioOutput(
+          encoding: AgentAudioOutputEncoding.opus,
+          sampleRate: 24000,
+          container: AgentAudioOutputContainer.none,
+          bitRate: 64000,
+        ).toJson();
+        expect(json, <String, dynamic>{
+          'encoding': 'opus',
+          'sample_rate': 24000,
+          'container': 'none',
+          'bitrate': 64000,
+        });
+        expect(json.containsKey('bit_rate'), isFalse);
+      },
+    );
 
     test('renders every output combination', () {
       final json = const AgentAudioOutput(
@@ -431,8 +429,9 @@ void main() {
         'g729': 'g729',
       };
       for (final entry in expected.entries) {
-        final value = AgentAudioEncoding.values
-            .firstWhere((AgentAudioEncoding e) => e.name == entry.value);
+        final value = AgentAudioEncoding.values.firstWhere(
+          (AgentAudioEncoding e) => e.name == entry.value,
+        );
         expect(value.wireName, entry.key, reason: entry.value);
         expect(
           AgentAudioInput(encoding: value).toJson()['encoding'],
@@ -472,10 +471,7 @@ void main() {
     });
 
     test('emits each field under its documented key when set', () {
-      const agent = AgentAgentSettings(
-        greeting: 'Hi there!',
-        language: 'en',
-      );
+      const agent = AgentAgentSettings(greeting: 'Hi there!', language: 'en');
       expect(agent.toJson(), <String, dynamic>{
         'greeting': 'Hi there!',
         'language': 'en',
@@ -537,10 +533,12 @@ void main() {
 
   group('AgentContext', () {
     test('wraps the message list under `messages`', () {
-      const context = AgentContext(messages: <AgentHistoryMessage>[
-        AgentHistoryMessage.text(role: 'user', content: 'Book a table.'),
-        AgentHistoryMessage.text(role: 'assistant', content: 'Done.'),
-      ]);
+      const context = AgentContext(
+        messages: <AgentHistoryMessage>[
+          AgentHistoryMessage.text(role: 'user', content: 'Book a table.'),
+          AgentHistoryMessage.text(role: 'assistant', content: 'Done.'),
+        ],
+      );
       expect(context.toJson(), <String, dynamic>{
         'messages': <Map<String, dynamic>>[
           <String, dynamic>{
@@ -632,22 +630,24 @@ void main() {
   });
 
   group('AgentFunctionCallRecord', () {
-    test('renders the required fields with client_side defaulting to false',
-        () {
-      const record = AgentFunctionCallRecord(
-        id: 'call-1',
-        name: 'get_weather',
-        arguments: '{"city":"SF"}',
-      );
-      expect(record.toJson(), <String, dynamic>{
-        'id': 'call-1',
-        'name': 'get_weather',
-        'client_side': false,
-        'arguments': '{"city":"SF"}',
-      });
-      expect(record.toJson().containsKey('response'), isFalse);
-      expect(record.toJson().containsKey('thought_signature'), isFalse);
-    });
+    test(
+      'renders the required fields with client_side defaulting to false',
+      () {
+        const record = AgentFunctionCallRecord(
+          id: 'call-1',
+          name: 'get_weather',
+          arguments: '{"city":"SF"}',
+        );
+        expect(record.toJson(), <String, dynamic>{
+          'id': 'call-1',
+          'name': 'get_weather',
+          'client_side': false,
+          'arguments': '{"city":"SF"}',
+        });
+        expect(record.toJson().containsKey('response'), isFalse);
+        expect(record.toJson().containsKey('thought_signature'), isFalse);
+      },
+    );
 
     test('renders every optional field when set', () {
       const record = AgentFunctionCallRecord(
@@ -706,8 +706,9 @@ void main() {
     });
 
     test('v2 minimal renders only type, version, and model', () {
-      final json =
-          const AgentListenProvider.v2(model: 'flux-general-en').toJson();
+      final json = const AgentListenProvider.v2(
+        model: 'flux-general-en',
+      ).toJson();
       expect(json, <String, dynamic>{
         'type': 'deepgram',
         'version': 'v2',
@@ -745,10 +746,7 @@ void main() {
         provider: AgentThinkProvider.openAi(model: 'gpt-5-mini'),
       );
       expect(think.toJson(), <String, dynamic>{
-        'provider': <String, dynamic>{
-          'type': 'open_ai',
-          'model': 'gpt-5-mini',
-        },
+        'provider': <String, dynamic>{'type': 'open_ai', 'model': 'gpt-5-mini'},
       });
       expect(think.toJson().containsKey('prompt'), isFalse);
       expect(think.toJson().containsKey('functions'), isFalse);
@@ -933,8 +931,9 @@ void main() {
         'secret_access_key': 'secret',
       });
       expect(
-        (json['credentials'] as Map<String, dynamic>)
-            .containsKey('session_token'),
+        (json['credentials'] as Map<String, dynamic>).containsKey(
+          'session_token',
+        ),
         isFalse,
       );
     });
@@ -1079,30 +1078,34 @@ void main() {
       );
     });
 
-    test('merges authorization into endpoint.headers alongside extra headers',
-        () {
-      final json = const AgentFunctionDefinition.server(
-        name: 'charge_card',
-        description: 'Charge the card.',
-        url: 'https://payments.example.com/charge',
-        method: 'PUT',
-        headers: <String, String>{'x-request-id': '42'},
-        authorization: <String, String>{'authorization': 'Bearer {{token}}'},
-      ).toJson();
-      expect(json['endpoint'], <String, dynamic>{
-        'url': 'https://payments.example.com/charge',
-        'method': 'PUT',
-        'headers': <String, String>{
-          'x-request-id': '42',
-          'authorization': 'Bearer {{token}}',
-        },
-      });
-      // No separate authorization object on the wire.
-      expect(
-        (json['endpoint'] as Map<String, dynamic>).containsKey('authorization'),
-        isFalse,
-      );
-    });
+    test(
+      'merges authorization into endpoint.headers alongside extra headers',
+      () {
+        final json = const AgentFunctionDefinition.server(
+          name: 'charge_card',
+          description: 'Charge the card.',
+          url: 'https://payments.example.com/charge',
+          method: 'PUT',
+          headers: <String, String>{'x-request-id': '42'},
+          authorization: <String, String>{'authorization': 'Bearer {{token}}'},
+        ).toJson();
+        expect(json['endpoint'], <String, dynamic>{
+          'url': 'https://payments.example.com/charge',
+          'method': 'PUT',
+          'headers': <String, String>{
+            'x-request-id': '42',
+            'authorization': 'Bearer {{token}}',
+          },
+        });
+        // No separate authorization object on the wire.
+        expect(
+          (json['endpoint'] as Map<String, dynamic>).containsKey(
+            'authorization',
+          ),
+          isFalse,
+        );
+      },
+    );
 
     test('authorization alone still produces endpoint.headers', () {
       final json = const AgentFunctionDefinition.server(

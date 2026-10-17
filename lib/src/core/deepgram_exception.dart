@@ -36,8 +36,11 @@ class DeepgramAuthException extends DeepgramException {
 /// The request was syntactically invalid (HTTP 400 / validation error).
 class DeepgramBadRequestException extends DeepgramException {
   /// Creates a [DeepgramBadRequestException].
-  const DeepgramBadRequestException(super.message,
-      {super.requestId, super.code});
+  const DeepgramBadRequestException(
+    super.message, {
+    super.requestId,
+    super.code,
+  });
 }
 
 /// The referenced resource does not exist (HTTP 404).
@@ -76,7 +79,7 @@ class DeepgramServerException extends DeepgramException {
 class DeepgramNetworkException extends DeepgramException {
   /// Creates a [DeepgramNetworkException].
   const DeepgramNetworkException(super.message, {Object? cause})
-      : _cause = cause;
+    : _cause = cause;
 
   final Object? _cause;
 

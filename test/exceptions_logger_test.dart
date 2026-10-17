@@ -48,8 +48,11 @@ void main() {
         'DeepgramException: boom (request_id: r-1)',
       );
       expect(
-        const DeepgramException('boom', requestId: 'r-1', code: 'E_1')
-            .toString(),
+        const DeepgramException(
+          'boom',
+          requestId: 'r-1',
+          code: 'E_1',
+        ).toString(),
         'DeepgramException: boom (code: E_1) (request_id: r-1)',
       );
     });
@@ -151,9 +154,11 @@ void main() {
 
     test('skips an empty close reason', () {
       expect(
-        const DeepgramWebSocketException('closed',
-                closeCode: 4008, closeReason: '')
-            .toString(),
+        const DeepgramWebSocketException(
+          'closed',
+          closeCode: 4008,
+          closeReason: '',
+        ).toString(),
         'DeepgramWebSocketException: closed (closeCode: 4008)',
       );
     });
@@ -227,30 +232,32 @@ void main() {
       expect(seen, <String>['still delivered']);
     });
 
-    test('listeners added during an emit do not receive the in-flight event',
-        () {
-      final logger = DeepgramLogger();
-      final order = <String>[];
-      logger.addListener((level, message, error) {
-        order.add('first:$message');
+    test(
+      'listeners added during an emit do not receive the in-flight event',
+      () {
+        final logger = DeepgramLogger();
+        final order = <String>[];
         logger.addListener((level, message, error) {
-          order.add('third:$message');
+          order.add('first:$message');
+          logger.addListener((level, message, error) {
+            order.add('third:$message');
+          });
         });
-      });
-      logger.addListener((level, message, error) {
-        order.add('second:$message');
-      });
-      logger.info('a');
-      expect(order, <String>['first:a', 'second:a']);
-      logger.info('b');
-      expect(order, <String>[
-        'first:a',
-        'second:a',
-        'first:b',
-        'second:b',
-        'third:b',
-      ]);
-    });
+        logger.addListener((level, message, error) {
+          order.add('second:$message');
+        });
+        logger.info('a');
+        expect(order, <String>['first:a', 'second:a']);
+        logger.info('b');
+        expect(order, <String>[
+          'first:a',
+          'second:a',
+          'first:b',
+          'second:b',
+          'third:b',
+        ]);
+      },
+    );
 
     test('clearListeners removes every listener', () {
       var sinkCalls = 0;
@@ -289,35 +296,43 @@ void main() {
       expect(result.requestId, 'rid-1');
     });
 
-    test('400 maps to DeepgramBadRequestException with body metadata',
-        () async {
-      final queue = QueueHttpClient();
-      queue.enqueueJson(<String, dynamic>{
-        'err_msg': 'the query was invalid',
-        'request_id': 'req-1',
-        'err_code': 'INVALID_QUERY',
-      }, status: 400);
-      await expectLater(
-        _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramBadRequestException>()
-            .having((e) => e.message, 'message', 'the query was invalid')
-            .having((e) => e.requestId, 'requestId', 'req-1')
-            .having((e) => e.code, 'code', 'INVALID_QUERY')),
-      );
-    });
+    test(
+      '400 maps to DeepgramBadRequestException with body metadata',
+      () async {
+        final queue = QueueHttpClient();
+        queue.enqueueJson(<String, dynamic>{
+          'err_msg': 'the query was invalid',
+          'request_id': 'req-1',
+          'err_code': 'INVALID_QUERY',
+        }, status: 400);
+        await expectLater(
+          _engine(queue).getJson('/v1/listen'),
+          throwsA(
+            isA<DeepgramBadRequestException>()
+                .having((e) => e.message, 'message', 'the query was invalid')
+                .having((e) => e.requestId, 'requestId', 'req-1')
+                .having((e) => e.code, 'code', 'INVALID_QUERY'),
+          ),
+        );
+      },
+    );
 
-    test('400 with an undecodable body falls back to the status text',
-        () async {
-      final queue = QueueHttpClient();
-      queue.enqueueJson('not json', status: 400);
-      await expectLater(
-        _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramBadRequestException>()
-            .having((e) => e.message, 'message', 'HTTP 400.')
-            .having((e) => e.requestId, 'requestId', isNull)
-            .having((e) => e.code, 'code', isNull)),
-      );
-    });
+    test(
+      '400 with an undecodable body falls back to the status text',
+      () async {
+        final queue = QueueHttpClient();
+        queue.enqueueJson('not json', status: 400);
+        await expectLater(
+          _engine(queue).getJson('/v1/listen'),
+          throwsA(
+            isA<DeepgramBadRequestException>()
+                .having((e) => e.message, 'message', 'HTTP 400.')
+                .having((e) => e.requestId, 'requestId', isNull)
+                .having((e) => e.code, 'code', isNull),
+          ),
+        );
+      },
+    );
 
     test('nested {error:{message}} bodies are unwrapped', () async {
       final queue = QueueHttpClient();
@@ -326,84 +341,134 @@ void main() {
       }, status: 400);
       await expectLater(
         _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramBadRequestException>()
-            .having((e) => e.message, 'message', 'nested reason')),
+        throwsA(
+          isA<DeepgramBadRequestException>().having(
+            (e) => e.message,
+            'message',
+            'nested reason',
+          ),
+        ),
       );
     });
 
     test('401 and 403 map to DeepgramAuthException', () async {
       final queue = QueueHttpClient();
-      queue.enqueueJson(<String, dynamic>{'message': 'invalid api key'},
-          status: 401);
-      queue.enqueueJson(<String, dynamic>{'reason': 'membership required'},
-          status: 403);
+      queue.enqueueJson(<String, dynamic>{
+        'message': 'invalid api key',
+      }, status: 401);
+      queue.enqueueJson(<String, dynamic>{
+        'reason': 'membership required',
+      }, status: 403);
       await expectLater(
         _engine(queue).getJson('/v1/projects'),
-        throwsA(isA<DeepgramAuthException>()
-            .having((e) => e.message, 'message', 'invalid api key')),
+        throwsA(
+          isA<DeepgramAuthException>().having(
+            (e) => e.message,
+            'message',
+            'invalid api key',
+          ),
+        ),
       );
       await expectLater(
         _engine(queue).getJson('/v1/projects'),
-        throwsA(isA<DeepgramAuthException>()
-            .having((e) => e.message, 'message', 'membership required')),
+        throwsA(
+          isA<DeepgramAuthException>().having(
+            (e) => e.message,
+            'message',
+            'membership required',
+          ),
+        ),
       );
     });
 
     test('402 maps to DeepgramQuotaException', () async {
       final queue = QueueHttpClient();
-      queue.enqueueJson(<String, dynamic>{'message': 'insufficient credit'},
-          status: 402);
+      queue.enqueueJson(<String, dynamic>{
+        'message': 'insufficient credit',
+      }, status: 402);
       await expectLater(
         _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramQuotaException>()
-            .having((e) => e.message, 'message', 'insufficient credit')),
+        throwsA(
+          isA<DeepgramQuotaException>().having(
+            (e) => e.message,
+            'message',
+            'insufficient credit',
+          ),
+        ),
+      );
+    });
+
+    test('404 maps to DeepgramNotFoundException, preferring the body request '
+        'id over the header', () async {
+      final queue = QueueHttpClient();
+      queue.enqueueJson(
+        <String, dynamic>{'message': 'no such project'},
+        status: 404,
+        headers: <String, String>{'x-request-id': 'hdr-7'},
+      );
+      queue.enqueueJson(
+        <String, dynamic>{},
+        status: 404,
+        headers: <String, String>{'x-request-id': 'hdr-8'},
+      );
+      await expectLater(
+        _engine(queue).getJson('/v1/projects/missing'),
+        throwsA(
+          isA<DeepgramNotFoundException>()
+              .having((e) => e.message, 'message', 'no such project')
+              .having((e) => e.requestId, 'requestId', 'hdr-7'),
+        ),
+      );
+      await expectLater(
+        _engine(queue).getJson('/v1/projects/missing'),
+        throwsA(
+          isA<DeepgramNotFoundException>()
+              .having((e) => e.message, 'message', 'HTTP 404.')
+              .having((e) => e.requestId, 'requestId', 'hdr-8'),
+        ),
       );
     });
 
     test(
-        '404 maps to DeepgramNotFoundException, preferring the body request '
-        'id over the header', () async {
-      final queue = QueueHttpClient();
-      queue.enqueueJson(<String, dynamic>{'message': 'no such project'},
-          status: 404, headers: <String, String>{'x-request-id': 'hdr-7'});
-      queue.enqueueJson(<String, dynamic>{},
-          status: 404, headers: <String, String>{'x-request-id': 'hdr-8'});
-      await expectLater(
-        _engine(queue).getJson('/v1/projects/missing'),
-        throwsA(isA<DeepgramNotFoundException>()
-            .having((e) => e.message, 'message', 'no such project')
-            .having((e) => e.requestId, 'requestId', 'hdr-7')),
-      );
-      await expectLater(
-        _engine(queue).getJson('/v1/projects/missing'),
-        throwsA(isA<DeepgramNotFoundException>()
-            .having((e) => e.message, 'message', 'HTTP 404.')
-            .having((e) => e.requestId, 'requestId', 'hdr-8')),
-      );
-    });
-
-    test('429 maps to DeepgramRateLimitException with a parsed Retry-After',
-        () async {
-      final queue = QueueHttpClient();
-      queue.enqueueJson(<String, dynamic>{'message': 'rate limited'},
-          status: 429, headers: <String, String>{'retry-after': '2'});
-      await expectLater(
-        _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramRateLimitException>()
-            .having((e) => e.message, 'message', 'rate limited')
-            .having(
-                (e) => e.retryAfter, 'retryAfter', const Duration(seconds: 2))),
-      );
-    });
+      '429 maps to DeepgramRateLimitException with a parsed Retry-After',
+      () async {
+        final queue = QueueHttpClient();
+        queue.enqueueJson(
+          <String, dynamic>{'message': 'rate limited'},
+          status: 429,
+          headers: <String, String>{'retry-after': '2'},
+        );
+        await expectLater(
+          _engine(queue).getJson('/v1/listen'),
+          throwsA(
+            isA<DeepgramRateLimitException>()
+                .having((e) => e.message, 'message', 'rate limited')
+                .having(
+                  (e) => e.retryAfter,
+                  'retryAfter',
+                  const Duration(seconds: 2),
+                ),
+          ),
+        );
+      },
+    );
 
     test('429 with a fractional Retry-After rounds to milliseconds', () async {
       final queue = QueueHttpClient();
-      queue.enqueueJson(<String, dynamic>{'message': 'slow down'},
-          status: 429, headers: <String, String>{'retry-after': '0.25'});
+      queue.enqueueJson(
+        <String, dynamic>{'message': 'slow down'},
+        status: 429,
+        headers: <String, String>{'retry-after': '0.25'},
+      );
       await expectLater(
         _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramRateLimitException>().having((e) => e.retryAfter,
-            'retryAfter', const Duration(milliseconds: 250))),
+        throwsA(
+          isA<DeepgramRateLimitException>().having(
+            (e) => e.retryAfter,
+            'retryAfter',
+            const Duration(milliseconds: 250),
+          ),
+        ),
       );
     });
 
@@ -412,8 +477,13 @@ void main() {
       queue.enqueueJson(<String, dynamic>{'message': 'slow down'}, status: 429);
       await expectLater(
         _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramRateLimitException>()
-            .having((e) => e.retryAfter, 'retryAfter', isNull)),
+        throwsA(
+          isA<DeepgramRateLimitException>().having(
+            (e) => e.retryAfter,
+            'retryAfter',
+            isNull,
+          ),
+        ),
       );
     });
 
@@ -422,29 +492,49 @@ void main() {
       queue.enqueueJson(<String, dynamic>{'message': 'teapot'}, status: 418);
       await expectLater(
         _engine(queue).getJson('/v1/coffee'),
-        throwsA(isA<DeepgramException>()
-            .having((e) => e.message, 'message', 'teapot')
-            .having((e) => e is DeepgramAuthException, 'notAuth', isFalse)
-            .having((e) => e is DeepgramBadRequestException, 'notBadRequest',
-                isFalse)
-            .having((e) => e is DeepgramServerException, 'notServer', isFalse)),
+        throwsA(
+          isA<DeepgramException>()
+              .having((e) => e.message, 'message', 'teapot')
+              .having((e) => e is DeepgramAuthException, 'notAuth', isFalse)
+              .having(
+                (e) => e is DeepgramBadRequestException,
+                'notBadRequest',
+                isFalse,
+              )
+              .having(
+                (e) => e is DeepgramServerException,
+                'notServer',
+                isFalse,
+              ),
+        ),
       );
     });
 
     test('5xx map to DeepgramServerException', () async {
       final queue = QueueHttpClient();
-      queue.enqueueJson(<String, dynamic>{'message': 'internal error'},
-          status: 500);
+      queue.enqueueJson(<String, dynamic>{
+        'message': 'internal error',
+      }, status: 500);
       queue.enqueueJson('Service Unavailable', status: 503);
       await expectLater(
         _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramServerException>()
-            .having((e) => e.message, 'message', 'internal error')),
+        throwsA(
+          isA<DeepgramServerException>().having(
+            (e) => e.message,
+            'message',
+            'internal error',
+          ),
+        ),
       );
       await expectLater(
         _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramServerException>()
-            .having((e) => e.message, 'message', 'HTTP 503.')),
+        throwsA(
+          isA<DeepgramServerException>().having(
+            (e) => e.message,
+            'message',
+            'HTTP 503.',
+          ),
+        ),
       );
     });
 
@@ -453,54 +543,69 @@ void main() {
       queue.enqueueError(TimeoutException('too slow'));
       await expectLater(
         _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramTimeoutException>().having(
-            (e) => e.message, 'message', 'Request timed out after 2s.')),
+        throwsA(
+          isA<DeepgramTimeoutException>().having(
+            (e) => e.message,
+            'message',
+            'Request timed out after 2s.',
+          ),
+        ),
       );
     });
 
-    test('client failures map to DeepgramNetworkException with a cause',
-        () async {
-      final queue = QueueHttpClient();
-      queue.enqueueError(http.ClientException('connection refused'));
-      await expectLater(
-        _engine(queue).getJson('/v1/listen'),
-        throwsA(isA<DeepgramNetworkException>()
-            .having((e) => e.message, 'message', 'HTTP transport failure.')
-            .having((e) => e.cause, 'cause', isA<http.ClientException>())),
-      );
-    });
+    test(
+      'client failures map to DeepgramNetworkException with a cause',
+      () async {
+        final queue = QueueHttpClient();
+        queue.enqueueError(http.ClientException('connection refused'));
+        await expectLater(
+          _engine(queue).getJson('/v1/listen'),
+          throwsA(
+            isA<DeepgramNetworkException>()
+                .having((e) => e.message, 'message', 'HTTP transport failure.')
+                .having((e) => e.cause, 'cause', isA<http.ClientException>()),
+          ),
+        );
+      },
+    );
 
-    test('a cancelled token throws DeepgramException naming the reason',
-        () async {
-      final queue = QueueHttpClient();
-      final engine = _engine(queue);
-      final token = HttpCancelToken()..cancel('user aborted');
-      await expectLater(
-        engine.getJson('/v1/projects', cancelToken: token),
-        throwsA(isA<DeepgramException>().having(
-          (e) => e.message,
-          'message',
-          'Request cancelled: user aborted',
-        )),
-      );
-    });
+    test(
+      'a cancelled token throws DeepgramException naming the reason',
+      () async {
+        final queue = QueueHttpClient();
+        final engine = _engine(queue);
+        final token = HttpCancelToken()..cancel('user aborted');
+        await expectLater(
+          engine.getJson('/v1/projects', cancelToken: token),
+          throwsA(
+            isA<DeepgramException>().having(
+              (e) => e.message,
+              'message',
+              'Request cancelled: user aborted',
+            ),
+          ),
+        );
+      },
+    );
 
-    test('HttpCancelToken reports its state and completes whenCancelled',
-        () async {
-      final token = HttpCancelToken();
-      expect(token.isCancelled, isFalse);
-      expect(token.reason, isNull);
-      final fired = token.whenCancelled;
-      token.cancel('why');
-      expect(token.isCancelled, isTrue);
-      expect(token.reason, 'why');
-      await fired;
-      // A later cancel() call overwrites the reason with the default.
-      token.cancel();
-      expect(token.reason, 'cancelled');
+    test(
+      'HttpCancelToken reports its state and completes whenCancelled',
+      () async {
+        final token = HttpCancelToken();
+        expect(token.isCancelled, isFalse);
+        expect(token.reason, isNull);
+        final fired = token.whenCancelled;
+        token.cancel('why');
+        expect(token.isCancelled, isTrue);
+        expect(token.reason, 'why');
+        await fired;
+        // A later cancel() call overwrites the reason with the default.
+        token.cancel();
+        expect(token.reason, 'cancelled');
 
-      final defaulted = HttpCancelToken()..cancel();
-      expect(defaulted.reason, 'cancelled');
-    });
+        final defaulted = HttpCancelToken()..cancel();
+        expect(defaulted.reason, 'cancelled');
+      },
+    );
   });
 }

@@ -64,14 +64,14 @@ class FluxTtsClient {
     FluxTtsOptions? options,
     ResilientWebSocketOptions? wsOptions,
     DeepgramLogger? logger,
-  })  : _logger = logger ?? config.logger ?? DeepgramLogger(),
-        _ws = ResilientWebSocket(
-          uri: config.wsUri('/v2/speak', options?.toQuery()),
-          config: config,
-          auth: auth,
-          options: wsOptions ?? const ResilientWebSocketOptions(),
-          logger: logger,
-        ) {
+  }) : _logger = logger ?? config.logger ?? DeepgramLogger(),
+       _ws = ResilientWebSocket(
+         uri: config.wsUri('/v2/speak', options?.toQuery()),
+         config: config,
+         auth: auth,
+         options: wsOptions ?? const ResilientWebSocketOptions(),
+         logger: logger,
+       ) {
     _listenForMessages();
   }
 
@@ -93,10 +93,10 @@ class FluxTtsClient {
   final StreamController<FluxSessionMetadata> _sessionMetadataController =
       StreamController<FluxSessionMetadata>.broadcast();
   final StreamController<FluxSpeakConfigureSuccess>
-      _configureSuccessController =
+  _configureSuccessController =
       StreamController<FluxSpeakConfigureSuccess>.broadcast();
   final StreamController<FluxSpeakConfigureFailure>
-      _configureFailureController =
+  _configureFailureController =
       StreamController<FluxSpeakConfigureFailure>.broadcast();
   final StreamController<TtsWarning> _warningsController =
       StreamController<TtsWarning>.broadcast();
@@ -185,18 +185,20 @@ class FluxTtsClient {
     // Subscribe to the state stream BEFORE connecting so the open/failed
     // transition can never race the subscription.
     final completion = _ws.states
-        .firstWhere((WsConnectionState state) =>
-            state == WsConnectionState.open ||
-            state == WsConnectionState.failed ||
-            state == WsConnectionState.closed)
+        .firstWhere(
+          (WsConnectionState state) =>
+              state == WsConnectionState.open ||
+              state == WsConnectionState.failed ||
+              state == WsConnectionState.closed,
+        )
         .then<void>((WsConnectionState state) {
-      if (state != WsConnectionState.open) {
-        throw DeepgramWebSocketException(
-          'The /v2/speak WebSocket connection did not open '
-          '(terminal state: ${state.name}).',
-        );
-      }
-    });
+          if (state != WsConnectionState.open) {
+            throw DeepgramWebSocketException(
+              'The /v2/speak WebSocket connection did not open '
+              '(terminal state: ${state.name}).',
+            );
+          }
+        });
     unawaited(_ws.connect());
     return completion;
   }
@@ -309,8 +311,10 @@ class FluxTtsClient {
 
   void _send(Map<String, dynamic> message) {
     if (_closed) {
-      _logger.warn('Dropping outbound Flux TTS message: the session is '
-          'closed.');
+      _logger.warn(
+        'Dropping outbound Flux TTS message: the session is '
+        'closed.',
+      );
       return;
     }
     _ws.send(jsonEncode(message));
@@ -623,8 +627,11 @@ class FluxSessionMetadata {
     return FluxSessionMetadata(
       totalAudioDurationMs: _intOr(json, 'total_audio_duration_ms', 0),
       totalInputCharacterCount: _intOr(json, 'total_input_character_count', 0),
-      totalBillableCharacterCount:
-          _intOr(json, 'total_billable_character_count', 0),
+      totalBillableCharacterCount: _intOr(
+        json,
+        'total_billable_character_count',
+        0,
+      ),
     );
   }
 }
@@ -659,7 +666,8 @@ class FluxSpeakConfigureSuccess {
   /// Defensively parses a `ConfigureSuccess` frame.
   factory FluxSpeakConfigureSuccess.fromJson(Map<String, dynamic> json) {
     return FluxSpeakConfigureSuccess(
-        applied: _parseAppliedConfig(json['applied']));
+      applied: _parseAppliedConfig(json['applied']),
+    );
   }
 }
 

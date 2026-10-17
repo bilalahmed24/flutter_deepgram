@@ -278,8 +278,10 @@ class FluxSttClient {
         );
         break;
       default:
-        _logger.debug('Ignoring unknown message type from /v2/listen: '
-            '$rawType');
+        _logger.debug(
+          'Ignoring unknown message type from /v2/listen: '
+          '$rawType',
+        );
         break;
     }
   }
@@ -305,10 +307,12 @@ class FluxSttClient {
     if (frameSummary.length > 512) {
       frameSummary = '${frameSummary.substring(0, 512)}...';
     }
-    _warningsController.add(FluxWarning(
-      code: 'PARSE_ERROR',
-      description: '$description (frame: $frameSummary)',
-    ));
+    _warningsController.add(
+      FluxWarning(
+        code: 'PARSE_ERROR',
+        description: '$description (frame: $frameSummary)',
+      ),
+    );
   }
 
   void _handleStreamError(Object error) {

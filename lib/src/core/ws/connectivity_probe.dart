@@ -17,7 +17,7 @@ class ConnectivityProbe {
   /// [client] is injectable for testing; production callers omit it and the
   /// ambient `package:http` client is used.
   ConnectivityProbe({required this.probeUrl, http.Client? client})
-      : _client = client;
+    : _client = client;
 
   /// The URL probed to establish that the internet is reachable.
   final String probeUrl;
@@ -39,8 +39,9 @@ class ConnectivityProbe {
   Future<bool> isInternetAvailable() async {
     try {
       final uri = Uri.parse(probeUrl);
-      final Future<http.Response> pending =
-          _client != null ? _client.head(uri) : http.head(uri);
+      final Future<http.Response> pending = _client != null
+          ? _client.head(uri)
+          : http.head(uri);
       final response = await pending.timeout(const Duration(seconds: 5));
       final up = response.statusCode > 0;
       if (up) {

@@ -43,10 +43,10 @@ const ResilientWebSocketOptions _fastWsOptions = ResilientWebSocketOptions(
 /// than the microtask latency of `await states.seen(...)`.
 const ResilientWebSocketOptions _slowReconnectWsOptions =
     ResilientWebSocketOptions(
-  minReconnectDelay: Duration(milliseconds: 300),
-  maxReconnectDelay: Duration(milliseconds: 300),
-  keepAliveInterval: Duration(minutes: 30),
-);
+      minReconnectDelay: Duration(milliseconds: 300),
+      maxReconnectDelay: Duration(milliseconds: 300),
+      keepAliveInterval: Duration(minutes: 30),
+    );
 
 /// Policy that always gives up after the first failed attempt.
 const ResilientWebSocketOptions _giveUpWsOptions = ResilientWebSocketOptions(
@@ -111,8 +111,9 @@ class _RoutingHttpClient implements HttpClient {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
-      'Unexpected HttpClient member used by the live client tests: '
-      '${invocation.memberName}');
+    'Unexpected HttpClient member used by the live client tests: '
+    '${invocation.memberName}',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -139,14 +140,18 @@ class _ServerConn {
 
   /// Starts pumping inbound frames.
   void pump() {
-    socket.cast<Object>().listen((Object frame) {
-      frames.add(frame);
-      if (_frameWaiters.isNotEmpty) {
-        _frameWaiters.removeAt(0).complete(frame);
-      } else {
-        _pendingFrames.add(frame);
-      }
-    }, onDone: _markDone, onError: (Object _) => _markDone());
+    socket.cast<Object>().listen(
+      (Object frame) {
+        frames.add(frame);
+        if (_frameWaiters.isNotEmpty) {
+          _frameWaiters.removeAt(0).complete(frame);
+        } else {
+          _pendingFrames.add(frame);
+        }
+      },
+      onDone: _markDone,
+      onError: (Object _) => _markDone(),
+    );
   }
 
   /// Resolves with the next frame the SDK sends (already-received frames are
@@ -157,10 +162,15 @@ class _ServerConn {
     }
     final waiter = Completer<Object>();
     _frameWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout, onTimeout: () {
-      throw TimeoutException('No frame within $_waitTimeout. '
-          'Frames so far: $frames');
-    });
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () {
+        throw TimeoutException(
+          'No frame within $_waitTimeout. '
+          'Frames so far: $frames',
+        );
+      },
+    );
   }
 
   /// Resolves once the socket is closed from either side.
@@ -168,8 +178,10 @@ class _ServerConn {
     if (_done) return Future<void>.value();
     final waiter = Completer<void>();
     _doneWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout,
-        onTimeout: () => throw TimeoutException('Socket stayed open.'));
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () => throw TimeoutException('Socket stayed open.'),
+    );
   }
 
   /// Sends a text frame.
@@ -243,9 +255,13 @@ class _LoopbackLiveServer {
     }
     final waiter = Completer<_ServerConn>();
     _connWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout,
-        onTimeout: () => throw TimeoutException('No connection within '
-            '$_waitTimeout.'));
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () => throw TimeoutException(
+        'No connection within '
+        '$_waitTimeout.',
+      ),
+    );
   }
 
   /// Shuts the server down.
@@ -266,8 +282,10 @@ class _LoopbackLiveServer {
           await request.response.close();
           return;
         }
-        final conn =
-            _ServerConn(request, await WebSocketTransformer.upgrade(request));
+        final conn = _ServerConn(
+          request,
+          await WebSocketTransformer.upgrade(request),
+        );
         connections.add(conn);
         conn.pump();
         if (_connWaiters.isNotEmpty) {
@@ -314,9 +332,13 @@ class _Recorder<T> {
   Future<T> get next {
     final waiter = Completer<T>();
     _nextWaiters.add(waiter);
-    return waiter.future.timeout(_waitTimeout,
-        onTimeout: () => throw TimeoutException('No event within '
-            '$_waitTimeout. Recorded: $values'));
+    return waiter.future.timeout(
+      _waitTimeout,
+      onTimeout: () => throw TimeoutException(
+        'No event within '
+        '$_waitTimeout. Recorded: $values',
+      ),
+    );
   }
 
   /// Resolves with the first recorded (or next) event matching [predicate].
@@ -326,11 +348,16 @@ class _Recorder<T> {
     }
     final wait = _PredicateWait<T>(predicate);
     _predicateWaiters.add(wait);
-    return wait.completer.future.timeout(_waitTimeout, onTimeout: () {
-      _predicateWaiters.remove(wait);
-      throw TimeoutException('No matching event within $_waitTimeout. '
-          'Recorded: $values');
-    });
+    return wait.completer.future.timeout(
+      _waitTimeout,
+      onTimeout: () {
+        _predicateWaiters.remove(wait);
+        throw TimeoutException(
+          'No matching event within $_waitTimeout. '
+          'Recorded: $values',
+        );
+      },
+    );
   }
 
   /// Resolves once [n] matching events have been recorded.
@@ -338,11 +365,16 @@ class _Recorder<T> {
     if (_countOf(predicate) >= n) return Future<void>.value();
     final wait = _CountWait<T>(n, predicate);
     _countWaiters.add(wait);
-    return wait.completer.future.timeout(_waitTimeout, onTimeout: () {
-      _countWaiters.remove(wait);
-      throw TimeoutException('Only ${_countOf(predicate)} of $n matching '
-          'events within $_waitTimeout. Recorded: $values');
-    });
+    return wait.completer.future.timeout(
+      _waitTimeout,
+      onTimeout: () {
+        _countWaiters.remove(wait);
+        throw TimeoutException(
+          'Only ${_countOf(predicate)} of $n matching '
+          'events within $_waitTimeout. Recorded: $values',
+        );
+      },
+    );
   }
 
   /// Stops recording.
@@ -436,8 +468,9 @@ class _PendingResponse {
 
   /// Completes the pending request with a JSON body.
   void respondJson(Object body) {
-    final List<int> bytes =
-        utf8.encode(body is String ? body : jsonEncode(body));
+    final List<int> bytes = utf8.encode(
+      body is String ? body : jsonEncode(body),
+    );
     _completer.complete(
       http.StreamedResponse(Stream<List<int>>.value(bytes), 200),
     );
@@ -447,16 +480,16 @@ class _PendingResponse {
 /// Wires a config, auth, HTTP engine, and logger against [server].
 class _Harness {
   _Harness(this.server, {http.Client? httpClient})
-      : config = DeepgramConfig(
-          apiKey: 'test-api-key',
-          baseUrl: _deepgramTestHost,
-          useTls: false,
-          requestTimeout: const Duration(seconds: 2),
-          connectTimeout: const Duration(seconds: 2),
-          maxRetries: 2,
-          retryBaseDelay: const Duration(milliseconds: 1),
-          retryMaxDelay: const Duration(milliseconds: 5),
-        ) {
+    : config = DeepgramConfig(
+        apiKey: 'test-api-key',
+        baseUrl: _deepgramTestHost,
+        useTls: false,
+        requestTimeout: const Duration(seconds: 2),
+        connectTimeout: const Duration(seconds: 2),
+        maxRetries: 2,
+        retryBaseDelay: const Duration(milliseconds: 1),
+        retryMaxDelay: const Duration(milliseconds: 5),
+      ) {
     _router.port = server.port;
     auth = DeepgramAuth(config);
     final http.Client client = httpClient ?? _ForwardingClient(queue);
@@ -522,68 +555,66 @@ Map<String, Object> _resultsFrame({
   required String transcript,
   required bool isFinal,
   bool speechFinal = false,
-}) =>
-    <String, Object>{
-      'type': 'Results',
-      'channel_index': <int>[0, 1],
-      'duration': 1.25,
-      'start': 0.5,
-      'is_final': isFinal,
-      'speech_final': speechFinal,
-      'channel': <String, Object>{
-        'alternatives': <Object>[
+}) => <String, Object>{
+  'type': 'Results',
+  'channel_index': <int>[0, 1],
+  'duration': 1.25,
+  'start': 0.5,
+  'is_final': isFinal,
+  'speech_final': speechFinal,
+  'channel': <String, Object>{
+    'alternatives': <Object>[
+      <String, Object>{
+        'transcript': transcript,
+        'confidence': 0.9,
+        'words': <Object>[
           <String, Object>{
-            'transcript': transcript,
-            'confidence': 0.9,
-            'words': <Object>[
-              <String, Object>{
-                'word': 'hello',
-                'start': 0.5,
-                'end': 0.8,
-                'confidence': 0.99,
-                'punctuated_word': 'Hello,',
-              },
-            ],
+            'word': 'hello',
+            'start': 0.5,
+            'end': 0.8,
+            'confidence': 0.99,
+            'punctuated_word': 'Hello,',
           },
         ],
       },
-      'metadata': <String, Object>{
-        'request_id': 'req-live',
-        'created': '2025-06-01T12:00:00Z',
-        'duration': 9.5,
-        'channels': 1,
-      },
-    };
+    ],
+  },
+  'metadata': <String, Object>{
+    'request_id': 'req-live',
+    'created': '2025-06-01T12:00:00Z',
+    'duration': 9.5,
+    'channels': 1,
+  },
+};
 
 Map<String, Object> _prerecordedBody(
   List<String> transcripts, {
   double duration = 4.5,
-}) =>
-    <String, Object>{
-      'metadata': <String, Object>{
-        'request_id': 'req-recovery',
-        'transaction_key': 'tk-9',
-        'sha256': 'cafebabe',
-        'created': '2025-06-01T12:00:00Z',
-        'duration': duration,
-        'channels': transcripts.length,
-        'model_info': <String, Object>{
-          'name': 'nova3',
-          'version': '2025-01',
-          'arch': 'nova-3',
+}) => <String, Object>{
+  'metadata': <String, Object>{
+    'request_id': 'req-recovery',
+    'transaction_key': 'tk-9',
+    'sha256': 'cafebabe',
+    'created': '2025-06-01T12:00:00Z',
+    'duration': duration,
+    'channels': transcripts.length,
+    'model_info': <String, Object>{
+      'name': 'nova3',
+      'version': '2025-01',
+      'arch': 'nova-3',
+    },
+  },
+  'results': <String, Object>{
+    'channels': <Object>[
+      for (final String transcript in transcripts)
+        <String, Object>{
+          'alternatives': <Object>[
+            <String, Object>{'transcript': transcript, 'confidence': 0.9},
+          ],
         },
-      },
-      'results': <String, Object>{
-        'channels': <Object>[
-          for (final String transcript in transcripts)
-            <String, Object>{
-              'alternatives': <Object>[
-                <String, Object>{'transcript': transcript, 'confidence': 0.9},
-              ],
-            },
-        ],
-      },
-    };
+    ],
+  },
+};
 
 // ---------------------------------------------------------------------------
 // live_options.dart
@@ -650,8 +681,9 @@ void main() {
 
     test('encodings map to their wire values', () {
       expect(
-        const LiveTranscriptionOptions(encoding: LiveEncoding.oggOpus)
-            .toQuery(),
+        const LiveTranscriptionOptions(
+          encoding: LiveEncoding.oggOpus,
+        ).toQuery(),
         containsPair('encoding', 'ogg-opus'),
       );
       expect(
@@ -734,8 +766,10 @@ void main() {
 
     test('smart_format suppresses redundant punctuate', () {
       expect(
-        const LiveTranscriptionOptions(smartFormat: true, punctuate: true)
-            .toQuery(),
+        const LiveTranscriptionOptions(
+          smartFormat: true,
+          punctuate: true,
+        ).toQuery(),
         isNot(contains('punctuate')),
       );
       expect(
@@ -743,14 +777,15 @@ void main() {
         containsPair('punctuate', 'true'),
       );
       expect(
-        const LiveTranscriptionOptions(smartFormat: false, punctuate: true)
-            .toQuery(),
+        const LiveTranscriptionOptions(
+          smartFormat: false,
+          punctuate: true,
+        ).toQuery(),
         containsPair('punctuate', 'true'),
       );
     });
 
-    test(
-        'keywords/keyterm/replace/search/tag render as repeated keys '
+    test('keywords/keyterm/replace/search/tag render as repeated keys '
         'and empty lists are omitted', () {
       final Map<String, dynamic> query = const LiveTranscriptionOptions(
         keywords: <String>['alpha', 'beta'],
@@ -1025,1356 +1060,1450 @@ void main() {
   // live_client.dart over the loopback /v1/listen server
   // -------------------------------------------------------------------------
 
-  group('DeepgramLiveClient (loopback /v1/listen server)',
-      timeout: const Timeout(Duration(seconds: 5)), () {
-    test(
-        'start() opens ws://host/v1/listen with the option query and '
-        'Token authorization header', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        options: const LiveTranscriptionOptions(
-          model: 'nova-2',
-          language: 'en-GB',
-          version: '2024-01',
-          encoding: LiveEncoding.linear16,
-          sampleRate: 16000,
-          channels: 2,
-          multichannel: true,
-          interimResults: false,
-          endpointingMs: 500,
-          utteranceEndMs: 1000,
-          vadEvents: true,
-          smartFormat: true,
-          punctuate: true,
-          numerals: true,
-          profanityFilter: true,
-          redact: 'pci',
-          keywords: <String>['alpha', 'beta'],
-          keyterm: <String>['Deepgram'],
-          tag: <String>['env:test'],
-        ),
-        wsOptions: _fastWsOptions,
-      );
-      addTearDown(client.forceClose);
+  group(
+    'DeepgramLiveClient (loopback /v1/listen server)',
+    timeout: const Timeout(Duration(seconds: 5)),
+    () {
+      test('start() opens ws://host/v1/listen with the option query and '
+          'Token authorization header', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          options: const LiveTranscriptionOptions(
+            model: 'nova-2',
+            language: 'en-GB',
+            version: '2024-01',
+            encoding: LiveEncoding.linear16,
+            sampleRate: 16000,
+            channels: 2,
+            multichannel: true,
+            interimResults: false,
+            endpointingMs: 500,
+            utteranceEndMs: 1000,
+            vadEvents: true,
+            smartFormat: true,
+            punctuate: true,
+            numerals: true,
+            profanityFilter: true,
+            redact: 'pci',
+            keywords: <String>['alpha', 'beta'],
+            keyterm: <String>['Deepgram'],
+            tag: <String>['env:test'],
+          ),
+          wsOptions: _fastWsOptions,
+        );
+        addTearDown(client.forceClose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      expect(client.isConnected, isTrue);
-      expect(conn.request.uri.path, '/v1/listen');
-      final Map<String, List<String>> query =
-          conn.request.uri.queryParametersAll;
-      expect(query['model'], <String>['nova-2']);
-      expect(query['language'], <String>['en-GB']);
-      expect(query['version'], <String>['2024-01']);
-      expect(query['encoding'], <String>['linear16']);
-      expect(query['sample_rate'], <String>['16000']);
-      expect(query['channels'], <String>['2']);
-      expect(query['multichannel'], <String>['true']);
-      expect(query['interim_results'], <String>['false']);
-      expect(query['endpointing'], <String>['500']);
-      expect(query['utterance_end_ms'], <String>['1000']);
-      expect(query['vad_events'], <String>['true']);
-      expect(query['smart_format'], <String>['true']);
-      expect(query['numerals'], <String>['true']);
-      expect(query['profanity_filter'], <String>['true']);
-      expect(query['redact'], <String>['pci']);
-      expect(query['keywords'], <String>['alpha', 'beta']);
-      expect(query['keyterm'], <String>['Deepgram']);
-      expect(query['tag'], <String>['env:test']);
-      expect(query.containsKey('punctuate'), isFalse);
-      expect(
-        conn.request.headers.value('Authorization'),
-        'Token test-api-key',
-      );
-    });
-
-    test(
-        'start() without options sends a bare path; default options send '
-        'model/language/interim_results', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      // `options: null` skips toQuery() entirely: the server default
-      // transcription settings apply.
-      expect(conn.request.uri.path, '/v1/listen');
-      expect(conn.request.uri.queryParameters, isEmpty);
-
-      // An explicitly constructed default options object renders exactly the
-      // documented defaults on the wire.
-      final client2 = harness.client(
-        options: const LiveTranscriptionOptions(),
-        wsOptions: _fastWsOptions,
-      );
-      addTearDown(client2.forceClose);
-      final conn2Future = server.nextConnection();
-      await client2.start();
-      final conn2 = await conn2Future;
-      expect(conn2.request.uri.queryParametersAll, <String, List<String>>{
-        'model': <String>['nova-3'],
-        'language': <String>['en-US'],
-        'interim_results': <String>['true'],
+        expect(client.isConnected, isTrue);
+        expect(conn.request.uri.path, '/v1/listen');
+        final Map<String, List<String>> query =
+            conn.request.uri.queryParametersAll;
+        expect(query['model'], <String>['nova-2']);
+        expect(query['language'], <String>['en-GB']);
+        expect(query['version'], <String>['2024-01']);
+        expect(query['encoding'], <String>['linear16']);
+        expect(query['sample_rate'], <String>['16000']);
+        expect(query['channels'], <String>['2']);
+        expect(query['multichannel'], <String>['true']);
+        expect(query['interim_results'], <String>['false']);
+        expect(query['endpointing'], <String>['500']);
+        expect(query['utterance_end_ms'], <String>['1000']);
+        expect(query['vad_events'], <String>['true']);
+        expect(query['smart_format'], <String>['true']);
+        expect(query['numerals'], <String>['true']);
+        expect(query['profanity_filter'], <String>['true']);
+        expect(query['redact'], <String>['pci']);
+        expect(query['keywords'], <String>['alpha', 'beta']);
+        expect(query['keyterm'], <String>['Deepgram']);
+        expect(query['tag'], <String>['env:test']);
+        expect(query.containsKey('punctuate'), isFalse);
+        expect(
+          conn.request.headers.value('Authorization'),
+          'Token test-api-key',
+        );
       });
-    });
 
-    test('start() is idempotent and concurrent starts share one connection',
+      test('start() without options sends a bare path; default options send '
+          'model/language/interim_results', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        // `options: null` skips toQuery() entirely: the server default
+        // transcription settings apply.
+        expect(conn.request.uri.path, '/v1/listen');
+        expect(conn.request.uri.queryParameters, isEmpty);
+
+        // An explicitly constructed default options object renders exactly the
+        // documented defaults on the wire.
+        final client2 = harness.client(
+          options: const LiveTranscriptionOptions(),
+          wsOptions: _fastWsOptions,
+        );
+        addTearDown(client2.forceClose);
+        final conn2Future = server.nextConnection();
+        await client2.start();
+        final conn2 = await conn2Future;
+        expect(conn2.request.uri.queryParametersAll, <String, List<String>>{
+          'model': <String>['nova-3'],
+          'language': <String>['en-US'],
+          'interim_results': <String>['true'],
+        });
+      });
+
+      test(
+        'start() is idempotent and concurrent starts share one connection',
         () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
+          final server = await _LoopbackLiveServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(wsOptions: _fastWsOptions);
+          addTearDown(client.forceClose);
 
-      final connFuture = server.nextConnection();
-      final Future<void> first = client.start();
-      final Future<void> second = client.start();
-      await first;
-      await second;
-      await client.start(); // Already open: resolves immediately.
-      await connFuture;
-      expect(server.connections, hasLength(1));
-    });
-
-    test('results stream emits typed interim then final results', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final results = _Recorder<LiveTranscriptionResult>(client.results);
-      addTearDown(results.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      conn.sendText(jsonEncode(_resultsFrame(
-        transcript: 'interim text',
-        isFinal: false,
-      )));
-      final LiveTranscriptionResult interim = await results.next;
-      expect(interim.transcript, 'interim text');
-      expect(interim.isFinal, isFalse);
-      expect(interim.speechFinal, isFalse);
-      expect(interim.duration, 1.25);
-      expect(interim.start, 0.5);
-      expect(interim.channelIndex, <int>[0, 1]);
-      expect(interim.metadata.requestId, 'req-live');
-      expect(interim.metadata.duration, 9.5);
-      expect(interim.alternatives.first.confidence, 0.9);
-      expect(interim.alternatives.first.words.first.punctuatedWord, 'Hello,');
-
-      conn.sendText(jsonEncode(_resultsFrame(
-        transcript: 'final transcript',
-        isFinal: true,
-        speechFinal: true,
-      )));
-      final LiveTranscriptionResult finalResult = await results.next;
-      expect(finalResult.transcript, 'final transcript');
-      expect(finalResult.isFinal, isTrue);
-      expect(finalResult.speechFinal, isTrue);
-      expect(finalResult.recovered, isFalse);
-      expect(finalResult.recoveredAtUtc, isNull);
-    });
-
-    test('metadata stream emits the CloseStream Metadata summary', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final metadata = _Recorder<LiveMetadataMessage>(client.metadata);
-      addTearDown(metadata.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      conn.sendText(jsonEncode(<String, Object>{
-        'type': 'Metadata',
-        'request_id': 'rid-9',
-        'transaction_key': 'tk-9',
-        'sha256': 'deadbeef',
-        'created': '2025-06-01T12:00:00Z',
-        'duration': 12.5,
-        'channels': 2,
-      }));
-      final LiveMetadataMessage message = await metadata.next;
-      expect(message.requestId, 'rid-9');
-      expect(message.transactionKey, 'tk-9');
-      expect(message.sha256, 'deadbeef');
-      expect(message.created, '2025-06-01T12:00:00Z');
-      expect(message.duration, 12.5);
-      expect(message.channels, 2);
-    });
-
-    test('utteranceEnds stream emits UtteranceEnd events', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        options: const LiveTranscriptionOptions(
-          vadEvents: true,
-          utteranceEndMs: 1000,
-        ),
-        wsOptions: _fastWsOptions,
-      );
-      addTearDown(client.forceClose);
-      final utteranceEnds = _Recorder<LiveUtteranceEnd>(client.utteranceEnds);
-      addTearDown(utteranceEnds.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-      expect(
-        conn.request.uri.queryParameters['utterance_end_ms'],
-        '1000',
-      );
-      expect(conn.request.uri.queryParameters['vad_events'], 'true');
-
-      conn.sendText(jsonEncode(<String, Object>{
-        'type': 'UtteranceEnd',
-        'channel': <int>[1, 0],
-        'last_word_end': 3.25,
-      }));
-      final LiveUtteranceEnd event = await utteranceEnds.next;
-      expect(event.channel, <int>[1, 0]);
-      expect(event.lastWordEnd, 3.25);
-    });
-
-    test('speechStarted stream emits SpeechStarted events', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        options: const LiveTranscriptionOptions(vadEvents: true),
-        wsOptions: _fastWsOptions,
-      );
-      addTearDown(client.forceClose);
-      final speechStarted = _Recorder<LiveSpeechStarted>(client.speechStarted);
-      addTearDown(speechStarted.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      conn.sendText(jsonEncode(<String, Object>{
-        'type': 'SpeechStarted',
-        'channel': <int>[0, 0],
-        'timestamp': 1.5,
-      }));
-      final LiveSpeechStarted event = await speechStarted.next;
-      expect(event.channel, <int>[0, 0]);
-      expect(event.timestamp, 1.5);
-    });
-
-    test('errors stream emits typed Deepgram Error frames', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final errors = _Recorder<LiveErrorMessage>(client.errors);
-      addTearDown(errors.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      conn.sendText(jsonEncode(<String, Object>{
-        'type': 'Error',
-        'variant': 'SchemaError',
-        'description': 'Cannot parse message',
-        'code': 'INVALID_MESSAGE',
-        'message': 'abc',
-      }));
-      final LiveErrorMessage error = await errors.next;
-      expect(error.variant, 'SchemaError');
-      expect(error.description, 'Cannot parse message');
-      expect(error.code, 'INVALID_MESSAGE');
-      expect(error.message, 'abc');
-    });
-
-    test('malformed frames produce ParseError events and never crash',
-        () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-      final errors = _Recorder<LiveErrorMessage>(client.errors);
-      addTearDown(errors.dispose);
-      final results = _Recorder<LiveTranscriptionResult>(client.results);
-      addTearDown(results.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      conn.sendText('this is not json');
-      LiveErrorMessage error = await errors.next;
-      expect(error.variant, 'ParseError');
-      expect(error.description, 'Received a frame that is not valid JSON.');
-      expect(error.message, 'this is not json');
-
-      conn.sendText('[1,2,3]');
-      error = await errors.next;
-      expect(error.description, 'Received a frame that is not a JSON object.');
-
-      conn.sendText('{"payload": true}');
-      error = await errors.next;
-      expect(error.description, 'Received a frame without a message type.');
-
-      conn.sendText('{"type": 42}');
-      error = await errors.next;
-      expect(error.description, 'Received a frame without a message type.');
-
-      // Binary frames and unknown types are ignored defensively.
-      conn.sendBytes(<int>[1, 2, 3]);
-      conn.sendText(jsonEncode(<String, Object>{'type': 'MysteryFrame'}));
-      await _quiet();
-      expect(errors.values, hasLength(4));
-      expect(
-        harness.logger.debugs,
-        anyElement(contains('Ignoring unknown message type')),
-      );
-
-      // The session survived all of it.
-      conn.sendText(jsonEncode(_resultsFrame(
-        transcript: 'still alive',
-        isFinal: true,
-      )));
-      final LiveTranscriptionResult result = await results.next;
-      expect(result.transcript, 'still alive');
-      expect(client.isConnected, isTrue);
-    });
-
-    test('sendAudio streams binary frames and skips empty chunks', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      client.sendAudio(<int>[1, 2, 3]);
-      client.sendAudio(<int>[4, 5]);
-      client.sendAudio(<int>[]);
-
-      final Object first = await conn.nextFrame();
-      expect(first, <int>[1, 2, 3]);
-      final Object second = await conn.nextFrame();
-      expect(second, <int>[4, 5]);
-      await _quiet();
-      expect(conn.frames, hasLength(2));
-    });
-
-    test('finish() sends Finalize and keeps the stream open', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      await client.finish();
-      expect(await conn.nextFrame(), '{"type":"Finalize"}');
-
-      client.sendAudio(<int>[9]);
-      expect(await conn.nextFrame(), <int>[9]);
-      expect(client.isConnected, isTrue);
-    });
-
-    test('configure() sends Configure messages and is a no-op without fields',
-        () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      addTearDown(client.forceClose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      await client.configure(keyterms: <String>['hello', 'deepgram']);
-      expect(
-        jsonDecode(await conn.nextFrame() as String),
-        <String, Object>{
-          'type': 'Configure',
-          'keyterms': <String>['hello', 'deepgram'],
+          final connFuture = server.nextConnection();
+          final Future<void> first = client.start();
+          final Future<void> second = client.start();
+          await first;
+          await second;
+          await client.start(); // Already open: resolves immediately.
+          await connFuture;
+          expect(server.connections, hasLength(1));
         },
       );
 
-      await client.configure(features: <String, bool>{'smart_format': true});
-      expect(
-        jsonDecode(await conn.nextFrame() as String),
-        <String, Object>{
-          'type': 'Configure',
-          'features': <String, bool>{'smart_format': true},
+      test('results stream emits typed interim then final results', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+        final results = _Recorder<LiveTranscriptionResult>(client.results);
+        addTearDown(results.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        conn.sendText(
+          jsonEncode(_resultsFrame(transcript: 'interim text', isFinal: false)),
+        );
+        final LiveTranscriptionResult interim = await results.next;
+        expect(interim.transcript, 'interim text');
+        expect(interim.isFinal, isFalse);
+        expect(interim.speechFinal, isFalse);
+        expect(interim.duration, 1.25);
+        expect(interim.start, 0.5);
+        expect(interim.channelIndex, <int>[0, 1]);
+        expect(interim.metadata.requestId, 'req-live');
+        expect(interim.metadata.duration, 9.5);
+        expect(interim.alternatives.first.confidence, 0.9);
+        expect(interim.alternatives.first.words.first.punctuatedWord, 'Hello,');
+
+        conn.sendText(
+          jsonEncode(
+            _resultsFrame(
+              transcript: 'final transcript',
+              isFinal: true,
+              speechFinal: true,
+            ),
+          ),
+        );
+        final LiveTranscriptionResult finalResult = await results.next;
+        expect(finalResult.transcript, 'final transcript');
+        expect(finalResult.isFinal, isTrue);
+        expect(finalResult.speechFinal, isTrue);
+        expect(finalResult.recovered, isFalse);
+        expect(finalResult.recoveredAtUtc, isNull);
+      });
+
+      test('metadata stream emits the CloseStream Metadata summary', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+        final metadata = _Recorder<LiveMetadataMessage>(client.metadata);
+        addTearDown(metadata.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        conn.sendText(
+          jsonEncode(<String, Object>{
+            'type': 'Metadata',
+            'request_id': 'rid-9',
+            'transaction_key': 'tk-9',
+            'sha256': 'deadbeef',
+            'created': '2025-06-01T12:00:00Z',
+            'duration': 12.5,
+            'channels': 2,
+          }),
+        );
+        final LiveMetadataMessage message = await metadata.next;
+        expect(message.requestId, 'rid-9');
+        expect(message.transactionKey, 'tk-9');
+        expect(message.sha256, 'deadbeef');
+        expect(message.created, '2025-06-01T12:00:00Z');
+        expect(message.duration, 12.5);
+        expect(message.channels, 2);
+      });
+
+      test('utteranceEnds stream emits UtteranceEnd events', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          options: const LiveTranscriptionOptions(
+            vadEvents: true,
+            utteranceEndMs: 1000,
+          ),
+          wsOptions: _fastWsOptions,
+        );
+        addTearDown(client.forceClose);
+        final utteranceEnds = _Recorder<LiveUtteranceEnd>(client.utteranceEnds);
+        addTearDown(utteranceEnds.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+        expect(conn.request.uri.queryParameters['utterance_end_ms'], '1000');
+        expect(conn.request.uri.queryParameters['vad_events'], 'true');
+
+        conn.sendText(
+          jsonEncode(<String, Object>{
+            'type': 'UtteranceEnd',
+            'channel': <int>[1, 0],
+            'last_word_end': 3.25,
+          }),
+        );
+        final LiveUtteranceEnd event = await utteranceEnds.next;
+        expect(event.channel, <int>[1, 0]);
+        expect(event.lastWordEnd, 3.25);
+      });
+
+      test('speechStarted stream emits SpeechStarted events', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          options: const LiveTranscriptionOptions(vadEvents: true),
+          wsOptions: _fastWsOptions,
+        );
+        addTearDown(client.forceClose);
+        final speechStarted = _Recorder<LiveSpeechStarted>(
+          client.speechStarted,
+        );
+        addTearDown(speechStarted.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        conn.sendText(
+          jsonEncode(<String, Object>{
+            'type': 'SpeechStarted',
+            'channel': <int>[0, 0],
+            'timestamp': 1.5,
+          }),
+        );
+        final LiveSpeechStarted event = await speechStarted.next;
+        expect(event.channel, <int>[0, 0]);
+        expect(event.timestamp, 1.5);
+      });
+
+      test('errors stream emits typed Deepgram Error frames', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+        final errors = _Recorder<LiveErrorMessage>(client.errors);
+        addTearDown(errors.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        conn.sendText(
+          jsonEncode(<String, Object>{
+            'type': 'Error',
+            'variant': 'SchemaError',
+            'description': 'Cannot parse message',
+            'code': 'INVALID_MESSAGE',
+            'message': 'abc',
+          }),
+        );
+        final LiveErrorMessage error = await errors.next;
+        expect(error.variant, 'SchemaError');
+        expect(error.description, 'Cannot parse message');
+        expect(error.code, 'INVALID_MESSAGE');
+        expect(error.message, 'abc');
+      });
+
+      test(
+        'malformed frames produce ParseError events and never crash',
+        () async {
+          final server = await _LoopbackLiveServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(wsOptions: _fastWsOptions);
+          addTearDown(client.forceClose);
+          final errors = _Recorder<LiveErrorMessage>(client.errors);
+          addTearDown(errors.dispose);
+          final results = _Recorder<LiveTranscriptionResult>(client.results);
+          addTearDown(results.dispose);
+
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
+
+          conn.sendText('this is not json');
+          LiveErrorMessage error = await errors.next;
+          expect(error.variant, 'ParseError');
+          expect(error.description, 'Received a frame that is not valid JSON.');
+          expect(error.message, 'this is not json');
+
+          conn.sendText('[1,2,3]');
+          error = await errors.next;
+          expect(
+            error.description,
+            'Received a frame that is not a JSON object.',
+          );
+
+          conn.sendText('{"payload": true}');
+          error = await errors.next;
+          expect(error.description, 'Received a frame without a message type.');
+
+          conn.sendText('{"type": 42}');
+          error = await errors.next;
+          expect(error.description, 'Received a frame without a message type.');
+
+          // Binary frames and unknown types are ignored defensively.
+          conn.sendBytes(<int>[1, 2, 3]);
+          conn.sendText(jsonEncode(<String, Object>{'type': 'MysteryFrame'}));
+          await _quiet();
+          expect(errors.values, hasLength(4));
+          expect(
+            harness.logger.debugs,
+            anyElement(contains('Ignoring unknown message type')),
+          );
+
+          // The session survived all of it.
+          conn.sendText(
+            jsonEncode(_resultsFrame(transcript: 'still alive', isFinal: true)),
+          );
+          final LiveTranscriptionResult result = await results.next;
+          expect(result.transcript, 'still alive');
+          expect(client.isConnected, isTrue);
         },
       );
 
-      await client.configure();
-      await _quiet(50);
-      expect(conn.frames, hasLength(2));
-    });
+      test('sendAudio streams binary frames and skips empty chunks', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
 
-    test('close() sends CloseStream, drains final results, and is terminal',
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        client.sendAudio(<int>[1, 2, 3]);
+        client.sendAudio(<int>[4, 5]);
+        client.sendAudio(<int>[]);
+
+        final Object first = await conn.nextFrame();
+        expect(first, <int>[1, 2, 3]);
+        final Object second = await conn.nextFrame();
+        expect(second, <int>[4, 5]);
+        await _quiet();
+        expect(conn.frames, hasLength(2));
+      });
+
+      test('finish() sends Finalize and keeps the stream open', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        addTearDown(client.forceClose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        await client.finish();
+        expect(await conn.nextFrame(), '{"type":"Finalize"}');
+
+        client.sendAudio(<int>[9]);
+        expect(await conn.nextFrame(), <int>[9]);
+        expect(client.isConnected, isTrue);
+      });
+
+      test(
+        'configure() sends Configure messages and is a no-op without fields',
         () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-      final results = _Recorder<LiveTranscriptionResult>(client.results);
-      addTearDown(results.dispose);
-      final metadata = _Recorder<LiveMetadataMessage>(client.metadata);
-      addTearDown(metadata.dispose);
+          final server = await _LoopbackLiveServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(wsOptions: _fastWsOptions);
+          addTearDown(client.forceClose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
 
-      final Future<void> closing = client.close();
-      expect(await conn.nextFrame(), '{"type":"CloseStream"}');
+          await client.configure(keyterms: <String>['hello', 'deepgram']);
+          expect(jsonDecode(await conn.nextFrame() as String), <String, Object>{
+            'type': 'Configure',
+            'keyterms': <String>['hello', 'deepgram'],
+          });
 
-      // Graceful drain: final results flushed before the socket goes down.
-      conn.sendText(jsonEncode(_resultsFrame(
-        transcript: 'flushed on close',
-        isFinal: true,
-        speechFinal: true,
-      )));
-      conn.sendText(jsonEncode(<String, Object>{
-        'type': 'Metadata',
-        'request_id': 'rid-close',
-        'duration': 3.5,
-        'channels': 1,
-      }));
-      await conn.closeNormally();
-      await closing;
+          await client.configure(
+            features: <String, bool>{'smart_format': true},
+          );
+          expect(jsonDecode(await conn.nextFrame() as String), <String, Object>{
+            'type': 'Configure',
+            'features': <String, bool>{'smart_format': true},
+          });
 
-      expect(results.values, hasLength(1));
-      expect(results.values.single.transcript, 'flushed on close');
-      expect(metadata.values, hasLength(1));
-      expect(metadata.values.single.requestId, 'rid-close');
-      await states
-          .waitFor((WsConnectionState s) => s == WsConnectionState.closed);
-      expect(client.isConnected, isFalse);
-
-      // Terminal: start() throws, everything else is a no-op, close() again
-      // resolves without error.
-      await expectLater(
-        client.start(),
-        throwsA(isA<DeepgramStateException>()),
+          await client.configure();
+          await _quiet(50);
+          expect(conn.frames, hasLength(2));
+        },
       );
-      client.sendAudio(<int>[1]);
-      await client.finish();
-      await client.configure(keyterms: <String>['late']);
-      await client.close();
-      await _quiet();
-      expect(conn.frames, hasLength(1)); // Only the CloseStream frame.
-    });
 
-    test('close() before start() terminalizes the session', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-
-      await client.close();
-      expect(client.isConnected, isFalse);
-      await expectLater(
-        client.start(),
-        throwsA(isA<DeepgramStateException>()),
-      );
-      client.sendAudio(<int>[1]);
-      await client.finish();
-      await client.forceClose();
-      expect(server.connections, isEmpty);
-    });
-
-    test('forceClose() drops the socket without CloseStream', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _fastWsOptions);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      final Future<void> gone = conn.done;
-      await client.forceClose();
-      await gone;
-      await states
-          .waitFor((WsConnectionState s) => s == WsConnectionState.closed);
-      expect(conn.frames, isEmpty);
-      await client.forceClose(); // Idempotent.
-      await _quiet();
-      expect(server.connections, hasLength(1));
-    });
-
-    test(
-        'start() throws DeepgramWebSocketException when the upgrade is '
-        'refused and the reconnect policy gives up', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      server.refuseUpgradesRemaining = 10;
-      final client = harness.client(
-        wsOptions: const ResilientWebSocketOptions(
-          minReconnectDelay: Duration(milliseconds: 1),
-          maxReconnectDelay: Duration(milliseconds: 5),
-          keepAliveInterval: Duration(minutes: 30),
-          shouldReconnect: _retryOnceThenGiveUp,
-        ),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-
-      await expectLater(
-        client.start(),
-        throwsA(isA<DeepgramWebSocketException>()),
-      );
-      await states
-          .waitFor((WsConnectionState s) => s == WsConnectionState.failed);
-      expect(server.refusedUpgrades, 2);
-      // Every failed attempt was corroborated by a probe against our server.
-      expect(server.plainRequests, hasLength(2));
-      expect(states.values, contains(WsConnectionState.reconnecting));
-
-      // A failed session can be started again once the endpoint recovers.
-      server.refuseUpgradesRemaining = 0;
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-      expect(client.isConnected, isTrue);
-      expect(conn.request.uri.path, '/v1/listen');
-    });
-
-    test('start() fails fast against a closed port with a give-up policy',
+      test(
+        'close() sends CloseStream, drains final results, and is terminal',
         () async {
-      // Reserve a loopback port, free it again, and route the fake host
-      // there: every connect is refused instantly, on loopback only.
-      final deadServer = await _LoopbackLiveServer.start();
-      final int deadPort = deadServer.port;
-      await deadServer.shutdown();
-      _router.port = deadPort;
+          final server = await _LoopbackLiveServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(wsOptions: _fastWsOptions);
+          final states = _Recorder<WsConnectionState>(client.connectionStates);
+          addTearDown(states.dispose);
+          final results = _Recorder<LiveTranscriptionResult>(client.results);
+          addTearDown(results.dispose);
+          final metadata = _Recorder<LiveMetadataMessage>(client.metadata);
+          addTearDown(metadata.dispose);
 
-      final config = DeepgramConfig(
-        apiKey: 'test-api-key',
-        baseUrl: _deepgramTestHost,
-        useTls: false,
-        requestTimeout: const Duration(seconds: 2),
-        connectTimeout: const Duration(seconds: 2),
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
+
+          final Future<void> closing = client.close();
+          expect(await conn.nextFrame(), '{"type":"CloseStream"}');
+
+          // Graceful drain: final results flushed before the socket goes down.
+          conn.sendText(
+            jsonEncode(
+              _resultsFrame(
+                transcript: 'flushed on close',
+                isFinal: true,
+                speechFinal: true,
+              ),
+            ),
+          );
+          conn.sendText(
+            jsonEncode(<String, Object>{
+              'type': 'Metadata',
+              'request_id': 'rid-close',
+              'duration': 3.5,
+              'channels': 1,
+            }),
+          );
+          await conn.closeNormally();
+          await closing;
+
+          expect(results.values, hasLength(1));
+          expect(results.values.single.transcript, 'flushed on close');
+          expect(metadata.values, hasLength(1));
+          expect(metadata.values.single.requestId, 'rid-close');
+          await states.waitFor(
+            (WsConnectionState s) => s == WsConnectionState.closed,
+          );
+          expect(client.isConnected, isFalse);
+
+          // Terminal: start() throws, everything else is a no-op, close() again
+          // resolves without error.
+          await expectLater(
+            client.start(),
+            throwsA(isA<DeepgramStateException>()),
+          );
+          client.sendAudio(<int>[1]);
+          await client.finish();
+          await client.configure(keyterms: <String>['late']);
+          await client.close();
+          await _quiet();
+          expect(conn.frames, hasLength(1)); // Only the CloseStream frame.
+        },
       );
-      final auth = DeepgramAuth(config);
-      final client = DeepgramLiveClient(
-        config: config,
-        auth: auth,
-        http: HttpEngine(
-          config: config,
-          auth: auth,
-          client: _ForwardingClient(QueueHttpClient()),
-        ),
-        wsOptions: _giveUpWsOptions,
-        logger: RecordingLogger(),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
 
-      await expectLater(
-        client.start(),
-        throwsA(isA<DeepgramWebSocketException>()),
-      );
-      await states
-          .waitFor((WsConnectionState s) => s == WsConnectionState.failed);
-    });
+      test('close() before start() terminalizes the session', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
 
-    test('the session works without an injected logger', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = DeepgramLiveClient(
-        config: harness.config,
-        auth: harness.auth,
-        http: harness.httpEngine,
-        wsOptions: _fastWsOptions,
-      );
-      addTearDown(client.forceClose);
-      final results = _Recorder<LiveTranscriptionResult>(client.results);
-      addTearDown(results.dispose);
+        await client.close();
+        expect(client.isConnected, isFalse);
+        await expectLater(
+          client.start(),
+          throwsA(isA<DeepgramStateException>()),
+        );
+        client.sendAudio(<int>[1]);
+        await client.finish();
+        await client.forceClose();
+        expect(server.connections, isEmpty);
+      });
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+      test('forceClose() drops the socket without CloseStream', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _fastWsOptions);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
 
-      conn.sendText(jsonEncode(_resultsFrame(
-        transcript: 'default logger',
-        isFinal: true,
-      )));
-      final LiveTranscriptionResult result = await results.next;
-      expect(result.transcript, 'default logger');
-    });
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-    test(
-        'user wsOptions are forwarded: onReconnecting/onReconnected fire '
-        'around the internal gap recovery', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      var userReconnectedCalls = 0;
-      final List<WsReconnectContext> reconnectingContexts =
-          <WsReconnectContext>[];
-      final client = harness.client(
-        wsOptions: ResilientWebSocketOptions(
-          minReconnectDelay: const Duration(milliseconds: 300),
-          maxReconnectDelay: const Duration(milliseconds: 300),
-          keepAliveInterval: const Duration(minutes: 30),
-          onReconnecting: reconnectingContexts.add,
-          onReconnected: () => userReconnectedCalls++,
-        ),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
+        final Future<void> gone = conn.done;
+        await client.forceClose();
+        await gone;
+        await states.waitFor(
+          (WsConnectionState s) => s == WsConnectionState.closed,
+        );
+        expect(conn.frames, isEmpty);
+        await client.forceClose(); // Idempotent.
+        await _quiet();
+        expect(server.connections, hasLength(1));
+      });
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
+      test('start() throws DeepgramWebSocketException when the upgrade is '
+          'refused and the reconnect policy gives up', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        server.refuseUpgradesRemaining = 10;
+        final client = harness.client(
+          wsOptions: const ResilientWebSocketOptions(
+            minReconnectDelay: Duration(milliseconds: 1),
+            maxReconnectDelay: Duration(milliseconds: 5),
+            keepAliveInterval: Duration(minutes: 30),
+            shouldReconnect: _retryOnceThenGiveUp,
+          ),
+        );
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
 
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2]);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      final conn2 = await server.nextConnection();
+        await expectLater(
+          client.start(),
+          throwsA(isA<DeepgramWebSocketException>()),
+        );
+        await states.waitFor(
+          (WsConnectionState s) => s == WsConnectionState.failed,
+        );
+        expect(server.refusedUpgrades, 2);
+        // Every failed attempt was corroborated by a probe against our server.
+        expect(server.plainRequests, hasLength(2));
+        expect(states.values, contains(WsConnectionState.reconnecting));
 
-      // The user hook fired once, with the reconnect context exposed...
-      expect(userReconnectedCalls, 1);
-      expect(reconnectingContexts, hasLength(1));
-      expect(reconnectingContexts.single.attempt, 1);
-      // ...and the composed wrapper still ran the internal gap flush.
-      expect(await conn2.nextFrame(), <int>[1, 2]);
-    });
+        // A failed session can be started again once the endpoint recovers.
+        server.refuseUpgradesRemaining = 0;
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+        expect(client.isConnected, isTrue);
+        expect(conn.request.uri.path, '/v1/listen');
+      });
 
-    test(
-        'audio buffered before the first connect is flushed on open '
-        '(small gap)', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _slowReconnectWsOptions);
-      addTearDown(client.forceClose);
-
-      // Captured before the session ever connects.
-      client.sendAudio(<int>[7, 7, 7]);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      expect(await conn.nextFrame(), <int>[7, 7, 7]);
-      expect(harness.queue.requests, isEmpty);
-    });
-
-    test(
-        'audio buffered before the first connect goes through HTTPS '
-        'recovery when large', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        options: const LiveTranscriptionOptions(model: 'nova-2'),
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
-      );
-      addTearDown(client.forceClose);
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
-      final results = _Recorder<LiveTranscriptionResult>(client.results);
-      addTearDown(results.dispose);
-
-      harness.queue.enqueueJson(_prerecordedBody(<String>['pre-connect gap']));
-
-      final DateTime beforeBuffering = DateTime.now().toUtc();
-      client.sendAudio(<int>[1, 2, 3, 4]);
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      final LiveTranscriptionResult event = await recovered.next;
-      expect(event.transcript, 'pre-connect gap');
-      expect(event.recovered, isTrue);
-      final DateTime? anchor = event.recoveredAtUtc;
-      expect(anchor, isNotNull);
-      expect(
-          anchor!.isAfter(beforeBuffering.subtract(
-            const Duration(seconds: 1),
-          )),
-          isTrue);
-      expect(event.isFinal, isTrue);
-      expect(event.speechFinal, isTrue);
-      expect(event.start, 0);
-      expect(event.duration, 4.5);
-      expect(event.channelIndex, <int>[0]);
-      expect(event.metadata.requestId, 'req-recovery');
-      expect(results.values, isEmpty);
-
-      final http.Request request = harness.queue.requests.single;
-      expect(request.method, 'POST');
-      expect(request.url.path, '/v1/listen');
-      expect(request.url.scheme, 'http');
-      expect(request.url.host, _deepgramTestHost);
-      expect(request.url.queryParameters['model'], 'nova-2');
-      expect(request.url.queryParameters['language'], 'en-US');
-      expect(
-          request.url.queryParameters.containsKey('interim_results'), isFalse);
-      expect(request.headers['Authorization'], 'Token test-api-key');
-      expect(request.headers['Content-Type'], 'audio/wav');
-      expect(request.bodyBytes, <int>[1, 2, 3, 4]);
-      await _quiet();
-      expect(conn.frames, isEmpty);
-    });
-
-    test(
-        'reconnect with nothing buffered flushes nothing and issues no '
-        'HTTPS call', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _slowReconnectWsOptions);
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      expect(client.reconnectAttempts, 1);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      final conn2 = await server.nextConnection();
-
-      await _quiet();
-      expect(conn2.frames, isEmpty);
-      expect(harness.queue.requests, isEmpty);
-      expect(recovered.values, isEmpty);
-      expect(client.reconnectAttempts, 0);
-    });
-
-    test(
-        'small gap: buffered audio is flushed into the reconnected socket '
-        'before live audio', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(wsOptions: _slowReconnectWsOptions);
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
-      final results = _Recorder<LiveTranscriptionResult>(client.results);
-      addTearDown(results.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-
-      // Audio keeps flowing while disconnected: it is buffered.
-      client.sendAudio(<int>[10, 20, 30]);
-      client.sendAudio(<int>[40, 50]);
-
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      final conn2 = await server.nextConnection();
-
-      // The gap is flushed first, then live audio continues.
-      expect(await conn2.nextFrame(), <int>[10, 20, 30]);
-      expect(await conn2.nextFrame(), <int>[40, 50]);
-      client.sendAudio(<int>[60]);
-      expect(await conn2.nextFrame(), <int>[60]);
-
-      expect(harness.queue.requests, isEmpty);
-      expect(recovered.values, isEmpty);
-      expect(results.values, isEmpty);
-      expect(
-        harness.logger.infos,
-        anyElement(contains('Flushing 5 buffered audio bytes')),
-      );
-      expect(states.values, <WsConnectionState>[
-        WsConnectionState.connecting,
-        WsConnectionState.open,
-        WsConnectionState.reconnecting,
-        WsConnectionState.open,
-      ]);
-    });
-
-    test(
-        'large gap: HTTPS pre-recorded recovery anchored at the disconnect '
-        'instant', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        options: const LiveTranscriptionOptions(
-          encoding: LiveEncoding.linear16,
-          sampleRate: 16000,
-          smartFormat: true,
-          keywords: <String>['alpha', 'beta'],
-        ),
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 4),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
-      final results = _Recorder<LiveTranscriptionResult>(client.results);
-      addTearDown(results.dispose);
-
-      harness.queue.enqueueJson(_prerecordedBody(
-        <String>['recovered channel zero', 'recovered channel one'],
-      ));
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      final DateTime beforeDrop = DateTime.now().toUtc();
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2, 3, 4, 5, 6, 7, 8]);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      final conn2 = await server.nextConnection();
-
-      final LiveTranscriptionResult channelZero = await recovered.next;
-      final LiveTranscriptionResult channelOne = await recovered.next;
-      expect(channelZero.transcript, 'recovered channel zero');
-      expect(channelOne.transcript, 'recovered channel one');
-      expect(channelZero.channelIndex, <int>[0]);
-      expect(channelOne.channelIndex, <int>[1]);
-      expect(channelZero.recovered, isTrue);
-      expect(channelOne.recovered, isTrue);
-      final DateTime anchor = channelZero.recoveredAtUtc!;
-      expect(
-        anchor.isAfter(beforeDrop.subtract(const Duration(seconds: 1))),
-        isTrue,
-      );
-      expect(
-        anchor.isBefore(DateTime.now().toUtc().add(const Duration(seconds: 1))),
-        isTrue,
-      );
-      expect(channelZero.isFinal, isTrue);
-      expect(channelZero.speechFinal, isTrue);
-      expect(channelZero.start, 0);
-      expect(channelZero.duration, 4.5);
-      expect(channelZero.metadata.requestId, 'req-recovery');
-      expect(channelOne.recoveredAtUtc, anchor);
-      // Recovered results are NOT repeated on the live stream.
-      expect(results.values, isEmpty);
-
-      final http.Request request = harness.queue.requests.single;
-      expect(request.method, 'POST');
-      expect(request.url.scheme, 'http');
-      expect(request.url.host, _deepgramTestHost);
-      expect(request.url.path, '/v1/listen');
-      expect(request.url.queryParameters['model'], 'nova-3');
-      expect(request.url.queryParameters['language'], 'en-US');
-      expect(request.url.queryParameters['smart_format'], 'true');
-      expect(request.url.queryParametersAll['keywords'],
-          <String>['alpha', 'beta']);
-      // Raw-PCM sessions recover with the raw content type.
-      expect(request.headers['Content-Type'], 'audio/raw;rate=16000');
-      expect(request.headers['Authorization'], 'Token test-api-key');
-      expect(request.bodyBytes, <int>[1, 2, 3, 4, 5, 6, 7, 8]);
-      expect(
-        harness.logger.infos,
-        anyElement(contains('HTTPS gap recovery complete')),
-      );
-      // Large gaps are never flushed into the live socket.
-      await _quiet();
-      expect(conn2.frames, isEmpty);
-    });
-
-    test('large gap strips streaming-only params from the recovery query',
+      test(
+        'start() fails fast against a closed port with a give-up policy',
         () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        options: const LiveTranscriptionOptions(
-          interimResults: true,
-          endpointingMs: 300,
-          utteranceEndMs: 700,
-          vadEvents: true,
-          channels: 2,
-          smartFormat: true,
-        ),
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 1),
+          // Reserve a loopback port, free it again, and route the fake host
+          // there: every connect is refused instantly, on loopback only.
+          final deadServer = await _LoopbackLiveServer.start();
+          final int deadPort = deadServer.port;
+          await deadServer.shutdown();
+          _router.port = deadPort;
+
+          final config = DeepgramConfig(
+            apiKey: 'test-api-key',
+            baseUrl: _deepgramTestHost,
+            useTls: false,
+            requestTimeout: const Duration(seconds: 2),
+            connectTimeout: const Duration(seconds: 2),
+          );
+          final auth = DeepgramAuth(config);
+          final client = DeepgramLiveClient(
+            config: config,
+            auth: auth,
+            http: HttpEngine(
+              config: config,
+              auth: auth,
+              client: _ForwardingClient(QueueHttpClient()),
+            ),
+            wsOptions: _giveUpWsOptions,
+            logger: RecordingLogger(),
+          );
+          addTearDown(client.forceClose);
+          final states = _Recorder<WsConnectionState>(client.connectionStates);
+          addTearDown(states.dispose);
+
+          await expectLater(
+            client.start(),
+            throwsA(isA<DeepgramWebSocketException>()),
+          );
+          await states.waitFor(
+            (WsConnectionState s) => s == WsConnectionState.failed,
+          );
+        },
       );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
 
-      harness.queue.enqueueJson(_prerecordedBody(<String>['stripped query']));
+      test('the session works without an injected logger', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = DeepgramLiveClient(
+          config: harness.config,
+          auth: harness.auth,
+          http: harness.httpEngine,
+          wsOptions: _fastWsOptions,
+        );
+        addTearDown(client.forceClose);
+        final results = _Recorder<LiveTranscriptionResult>(client.results);
+        addTearDown(results.dispose);
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2, 3]);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      await server.nextConnection();
-      await _until(() => harness.queue.requests.length == 1);
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
 
-      final Map<String, String> query =
-          harness.queue.requests.single.url.queryParameters;
-      expect(query['model'], 'nova-3');
-      expect(query['smart_format'], 'true');
-      expect(query.containsKey('interim_results'), isFalse);
-      expect(query.containsKey('endpointing'), isFalse);
-      expect(query.containsKey('utterance_end_ms'), isFalse);
-      expect(query.containsKey('vad_events'), isFalse);
-      expect(query.containsKey('channels'), isFalse);
-      // No encoding/sample rate: containerized default content type.
-      expect(
-        harness.queue.requests.single.headers['Content-Type'],
-        'audio/wav',
-      );
-    });
+        conn.sendText(
+          jsonEncode(
+            _resultsFrame(transcript: 'default logger', isFinal: true),
+          ),
+        );
+        final LiveTranscriptionResult result = await results.next;
+        expect(result.transcript, 'default logger');
+      });
 
-    test('an explicit audioContentType override wins over derivation',
+      test('user wsOptions are forwarded: onReconnecting/onReconnected fire '
+          'around the internal gap recovery', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        var userReconnectedCalls = 0;
+        final List<WsReconnectContext> reconnectingContexts =
+            <WsReconnectContext>[];
+        final client = harness.client(
+          wsOptions: ResilientWebSocketOptions(
+            minReconnectDelay: const Duration(milliseconds: 300),
+            maxReconnectDelay: const Duration(milliseconds: 300),
+            keepAliveInterval: const Duration(minutes: 30),
+            onReconnecting: reconnectingContexts.add,
+            onReconnected: () => userReconnectedCalls++,
+          ),
+        );
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        await conn.drop();
+        await states.seen(
+          1,
+          (WsConnectionState s) => s == WsConnectionState.reconnecting,
+        );
+        client.sendAudio(<int>[1, 2]);
+        await states.seen(
+          2,
+          (WsConnectionState s) => s == WsConnectionState.open,
+        );
+        final conn2 = await server.nextConnection();
+
+        // The user hook fired once, with the reconnect context exposed...
+        expect(userReconnectedCalls, 1);
+        expect(reconnectingContexts, hasLength(1));
+        expect(reconnectingContexts.single.attempt, 1);
+        // ...and the composed wrapper still ran the internal gap flush.
+        expect(await conn2.nextFrame(), <int>[1, 2]);
+      });
+
+      test('audio buffered before the first connect is flushed on open '
+          '(small gap)', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _slowReconnectWsOptions);
+        addTearDown(client.forceClose);
+
+        // Captured before the session ever connects.
+        client.sendAudio(<int>[7, 7, 7]);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        expect(await conn.nextFrame(), <int>[7, 7, 7]);
+        expect(harness.queue.requests, isEmpty);
+      });
+
+      test('audio buffered before the first connect goes through HTTPS '
+          'recovery when large', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          options: const LiveTranscriptionOptions(model: 'nova-2'),
+          wsOptions: _slowReconnectWsOptions,
+          gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
+        );
+        addTearDown(client.forceClose);
+        final recovered = _Recorder<LiveTranscriptionResult>(
+          client.recoveredResults,
+        );
+        addTearDown(recovered.dispose);
+        final results = _Recorder<LiveTranscriptionResult>(client.results);
+        addTearDown(results.dispose);
+
+        harness.queue.enqueueJson(
+          _prerecordedBody(<String>['pre-connect gap']),
+        );
+
+        final DateTime beforeBuffering = DateTime.now().toUtc();
+        client.sendAudio(<int>[1, 2, 3, 4]);
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        final LiveTranscriptionResult event = await recovered.next;
+        expect(event.transcript, 'pre-connect gap');
+        expect(event.recovered, isTrue);
+        final DateTime? anchor = event.recoveredAtUtc;
+        expect(anchor, isNotNull);
+        expect(
+          anchor!.isAfter(beforeBuffering.subtract(const Duration(seconds: 1))),
+          isTrue,
+        );
+        expect(event.isFinal, isTrue);
+        expect(event.speechFinal, isTrue);
+        expect(event.start, 0);
+        expect(event.duration, 4.5);
+        expect(event.channelIndex, <int>[0]);
+        expect(event.metadata.requestId, 'req-recovery');
+        expect(results.values, isEmpty);
+
+        final http.Request request = harness.queue.requests.single;
+        expect(request.method, 'POST');
+        expect(request.url.path, '/v1/listen');
+        expect(request.url.scheme, 'http');
+        expect(request.url.host, _deepgramTestHost);
+        expect(request.url.queryParameters['model'], 'nova-2');
+        expect(request.url.queryParameters['language'], 'en-US');
+        expect(
+          request.url.queryParameters.containsKey('interim_results'),
+          isFalse,
+        );
+        expect(request.headers['Authorization'], 'Token test-api-key');
+        expect(request.headers['Content-Type'], 'audio/wav');
+        expect(request.bodyBytes, <int>[1, 2, 3, 4]);
+        await _quiet();
+        expect(conn.frames, isEmpty);
+      });
+
+      test('reconnect with nothing buffered flushes nothing and issues no '
+          'HTTPS call', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _slowReconnectWsOptions);
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
+        final recovered = _Recorder<LiveTranscriptionResult>(
+          client.recoveredResults,
+        );
+        addTearDown(recovered.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        await conn.drop();
+        await states.seen(
+          1,
+          (WsConnectionState s) => s == WsConnectionState.reconnecting,
+        );
+        expect(client.reconnectAttempts, 1);
+        await states.seen(
+          2,
+          (WsConnectionState s) => s == WsConnectionState.open,
+        );
+        final conn2 = await server.nextConnection();
+
+        await _quiet();
+        expect(conn2.frames, isEmpty);
+        expect(harness.queue.requests, isEmpty);
+        expect(recovered.values, isEmpty);
+        expect(client.reconnectAttempts, 0);
+      });
+
+      test('small gap: buffered audio is flushed into the reconnected socket '
+          'before live audio', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(wsOptions: _slowReconnectWsOptions);
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
+        final recovered = _Recorder<LiveTranscriptionResult>(
+          client.recoveredResults,
+        );
+        addTearDown(recovered.dispose);
+        final results = _Recorder<LiveTranscriptionResult>(client.results);
+        addTearDown(results.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        await conn.drop();
+        await states.seen(
+          1,
+          (WsConnectionState s) => s == WsConnectionState.reconnecting,
+        );
+
+        // Audio keeps flowing while disconnected: it is buffered.
+        client.sendAudio(<int>[10, 20, 30]);
+        client.sendAudio(<int>[40, 50]);
+
+        await states.seen(
+          2,
+          (WsConnectionState s) => s == WsConnectionState.open,
+        );
+        final conn2 = await server.nextConnection();
+
+        // The gap is flushed first, then live audio continues.
+        expect(await conn2.nextFrame(), <int>[10, 20, 30]);
+        expect(await conn2.nextFrame(), <int>[40, 50]);
+        client.sendAudio(<int>[60]);
+        expect(await conn2.nextFrame(), <int>[60]);
+
+        expect(harness.queue.requests, isEmpty);
+        expect(recovered.values, isEmpty);
+        expect(results.values, isEmpty);
+        expect(
+          harness.logger.infos,
+          anyElement(contains('Flushing 5 buffered audio bytes')),
+        );
+        expect(states.values, <WsConnectionState>[
+          WsConnectionState.connecting,
+          WsConnectionState.open,
+          WsConnectionState.reconnecting,
+          WsConnectionState.open,
+        ]);
+      });
+
+      test('large gap: HTTPS pre-recorded recovery anchored at the disconnect '
+          'instant', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          options: const LiveTranscriptionOptions(
+            encoding: LiveEncoding.linear16,
+            sampleRate: 16000,
+            smartFormat: true,
+            keywords: <String>['alpha', 'beta'],
+          ),
+          wsOptions: _slowReconnectWsOptions,
+          gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 4),
+        );
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
+        final recovered = _Recorder<LiveTranscriptionResult>(
+          client.recoveredResults,
+        );
+        addTearDown(recovered.dispose);
+        final results = _Recorder<LiveTranscriptionResult>(client.results);
+        addTearDown(results.dispose);
+
+        harness.queue.enqueueJson(
+          _prerecordedBody(<String>[
+            'recovered channel zero',
+            'recovered channel one',
+          ]),
+        );
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        final DateTime beforeDrop = DateTime.now().toUtc();
+        await conn.drop();
+        await states.seen(
+          1,
+          (WsConnectionState s) => s == WsConnectionState.reconnecting,
+        );
+        client.sendAudio(<int>[1, 2, 3, 4, 5, 6, 7, 8]);
+        await states.seen(
+          2,
+          (WsConnectionState s) => s == WsConnectionState.open,
+        );
+        final conn2 = await server.nextConnection();
+
+        final LiveTranscriptionResult channelZero = await recovered.next;
+        final LiveTranscriptionResult channelOne = await recovered.next;
+        expect(channelZero.transcript, 'recovered channel zero');
+        expect(channelOne.transcript, 'recovered channel one');
+        expect(channelZero.channelIndex, <int>[0]);
+        expect(channelOne.channelIndex, <int>[1]);
+        expect(channelZero.recovered, isTrue);
+        expect(channelOne.recovered, isTrue);
+        final DateTime anchor = channelZero.recoveredAtUtc!;
+        expect(
+          anchor.isAfter(beforeDrop.subtract(const Duration(seconds: 1))),
+          isTrue,
+        );
+        expect(
+          anchor.isBefore(
+            DateTime.now().toUtc().add(const Duration(seconds: 1)),
+          ),
+          isTrue,
+        );
+        expect(channelZero.isFinal, isTrue);
+        expect(channelZero.speechFinal, isTrue);
+        expect(channelZero.start, 0);
+        expect(channelZero.duration, 4.5);
+        expect(channelZero.metadata.requestId, 'req-recovery');
+        expect(channelOne.recoveredAtUtc, anchor);
+        // Recovered results are NOT repeated on the live stream.
+        expect(results.values, isEmpty);
+
+        final http.Request request = harness.queue.requests.single;
+        expect(request.method, 'POST');
+        expect(request.url.scheme, 'http');
+        expect(request.url.host, _deepgramTestHost);
+        expect(request.url.path, '/v1/listen');
+        expect(request.url.queryParameters['model'], 'nova-3');
+        expect(request.url.queryParameters['language'], 'en-US');
+        expect(request.url.queryParameters['smart_format'], 'true');
+        expect(request.url.queryParametersAll['keywords'], <String>[
+          'alpha',
+          'beta',
+        ]);
+        // Raw-PCM sessions recover with the raw content type.
+        expect(request.headers['Content-Type'], 'audio/raw;rate=16000');
+        expect(request.headers['Authorization'], 'Token test-api-key');
+        expect(request.bodyBytes, <int>[1, 2, 3, 4, 5, 6, 7, 8]);
+        expect(
+          harness.logger.infos,
+          anyElement(contains('HTTPS gap recovery complete')),
+        );
+        // Large gaps are never flushed into the live socket.
+        await _quiet();
+        expect(conn2.frames, isEmpty);
+      });
+
+      test(
+        'large gap strips streaming-only params from the recovery query',
         () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        options: const LiveTranscriptionOptions(
-          encoding: LiveEncoding.linear16,
-          sampleRate: 16000,
-        ),
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(
-          maxLiveFlushBytes: 1,
-          audioContentType: 'audio/mpeg',
-        ),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
+          final server = await _LoopbackLiveServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(
+            options: const LiveTranscriptionOptions(
+              interimResults: true,
+              endpointingMs: 300,
+              utteranceEndMs: 700,
+              vadEvents: true,
+              channels: 2,
+              smartFormat: true,
+            ),
+            wsOptions: _slowReconnectWsOptions,
+            gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 1),
+          );
+          addTearDown(client.forceClose);
+          final states = _Recorder<WsConnectionState>(client.connectionStates);
+          addTearDown(states.dispose);
 
-      harness.queue.enqueueJson(_prerecordedBody(<String>['override']));
+          harness.queue.enqueueJson(
+            _prerecordedBody(<String>['stripped query']),
+          );
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2, 3, 4, 5]);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      await server.nextConnection();
-      await _until(() => harness.queue.requests.length == 1);
-      expect(
-        harness.queue.requests.single.headers['Content-Type'],
-        'audio/mpeg',
-      );
-    });
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
+          await conn.drop();
+          await states.seen(
+            1,
+            (WsConnectionState s) => s == WsConnectionState.reconnecting,
+          );
+          client.sendAudio(<int>[1, 2, 3]);
+          await states.seen(
+            2,
+            (WsConnectionState s) => s == WsConnectionState.open,
+          );
+          await server.nextConnection();
+          await _until(() => harness.queue.requests.length == 1);
 
-    test('gap recovery disabled drops buffered audio silently', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(enabled: false),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2, 3]);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      final conn2 = await server.nextConnection();
-
-      await _quiet();
-      expect(conn2.frames, isEmpty);
-      expect(harness.queue.requests, isEmpty);
-      expect(recovered.values, isEmpty);
-    });
-
-    test(
-        'buffer cap drops newer chunks with a warning and flushes only '
-        'what fit', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(
-          maxBufferBytes: 8,
-          maxLiveFlushBytes: 8,
-        ),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2, 3, 4, 5]); // Fits (5 <= 8).
-      client.sendAudio(<int>[6, 7, 8, 9, 10]); // Would exceed: dropped.
-      expect(
-        harness.logger.warns,
-        anyElement(contains('Live gap buffer is full')),
-      );
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      final conn2 = await server.nextConnection();
-
-      expect(await conn2.nextFrame(), <int>[1, 2, 3, 4, 5]);
-      await _quiet();
-      expect(conn2.frames, hasLength(1));
-      expect(harness.queue.requests, isEmpty);
-    });
-
-    test(
-        'a failed HTTPS recovery logs a warning and the session keeps '
-        'working', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
-      final results = _Recorder<LiveTranscriptionResult>(client.results);
-      addTearDown(results.dispose);
-
-      harness.queue.enqueueError(StateError('recovery transport died'));
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2, 3, 4, 5]);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      final conn2 = await server.nextConnection();
-
-      await _until(() => harness.logger.warns.any(
-          (String message) => message.contains('HTTPS gap recovery failed')));
-      expect(recovered.values, isEmpty);
-      expect(
-        harness.logger.warns,
-        anyElement(contains('transcript for the outage window is lost')),
+          final Map<String, String> query =
+              harness.queue.requests.single.url.queryParameters;
+          expect(query['model'], 'nova-3');
+          expect(query['smart_format'], 'true');
+          expect(query.containsKey('interim_results'), isFalse);
+          expect(query.containsKey('endpointing'), isFalse);
+          expect(query.containsKey('utterance_end_ms'), isFalse);
+          expect(query.containsKey('vad_events'), isFalse);
+          expect(query.containsKey('channels'), isFalse);
+          // No encoding/sample rate: containerized default content type.
+          expect(
+            harness.queue.requests.single.headers['Content-Type'],
+            'audio/wav',
+          );
+        },
       );
 
-      // Live transcription is unaffected by the failed recovery.
-      client.sendAudio(<int>[9]);
-      expect(await conn2.nextFrame(), <int>[9]);
-      conn2.sendText(jsonEncode(_resultsFrame(
-        transcript: 'live after failed recovery',
-        isFinal: true,
-      )));
-      final LiveTranscriptionResult result = await results.next;
-      expect(result.transcript, 'live after failed recovery');
-    });
+      test(
+        'an explicit audioContentType override wins over derivation',
+        () async {
+          final server = await _LoopbackLiveServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(
+            options: const LiveTranscriptionOptions(
+              encoding: LiveEncoding.linear16,
+              sampleRate: 16000,
+            ),
+            wsOptions: _slowReconnectWsOptions,
+            gapRecovery: const LiveGapRecoveryOptions(
+              maxLiveFlushBytes: 1,
+              audioContentType: 'audio/mpeg',
+            ),
+          );
+          addTearDown(client.forceClose);
+          final states = _Recorder<WsConnectionState>(client.connectionStates);
+          addTearDown(states.dispose);
 
-    test('uninterpretable recovery responses emit nothing', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
+          harness.queue.enqueueJson(_prerecordedBody(<String>['override']));
 
-      harness.queue.enqueueJson(<String, dynamic>{'results': 'not-a-map'});
-      harness.queue.enqueueJson(
-        <String, dynamic>{
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
+          await conn.drop();
+          await states.seen(
+            1,
+            (WsConnectionState s) => s == WsConnectionState.reconnecting,
+          );
+          client.sendAudio(<int>[1, 2, 3, 4, 5]);
+          await states.seen(
+            2,
+            (WsConnectionState s) => s == WsConnectionState.open,
+          );
+          await server.nextConnection();
+          await _until(() => harness.queue.requests.length == 1);
+          expect(
+            harness.queue.requests.single.headers['Content-Type'],
+            'audio/mpeg',
+          );
+        },
+      );
+
+      test('gap recovery disabled drops buffered audio silently', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          wsOptions: _slowReconnectWsOptions,
+          gapRecovery: const LiveGapRecoveryOptions(enabled: false),
+        );
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
+        final recovered = _Recorder<LiveTranscriptionResult>(
+          client.recoveredResults,
+        );
+        addTearDown(recovered.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        await conn.drop();
+        await states.seen(
+          1,
+          (WsConnectionState s) => s == WsConnectionState.reconnecting,
+        );
+        client.sendAudio(<int>[1, 2, 3]);
+        await states.seen(
+          2,
+          (WsConnectionState s) => s == WsConnectionState.open,
+        );
+        final conn2 = await server.nextConnection();
+
+        await _quiet();
+        expect(conn2.frames, isEmpty);
+        expect(harness.queue.requests, isEmpty);
+        expect(recovered.values, isEmpty);
+      });
+
+      test('buffer cap drops newer chunks with a warning and flushes only '
+          'what fit', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          wsOptions: _slowReconnectWsOptions,
+          gapRecovery: const LiveGapRecoveryOptions(
+            maxBufferBytes: 8,
+            maxLiveFlushBytes: 8,
+          ),
+        );
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+
+        await conn.drop();
+        await states.seen(
+          1,
+          (WsConnectionState s) => s == WsConnectionState.reconnecting,
+        );
+        client.sendAudio(<int>[1, 2, 3, 4, 5]); // Fits (5 <= 8).
+        client.sendAudio(<int>[6, 7, 8, 9, 10]); // Would exceed: dropped.
+        expect(
+          harness.logger.warns,
+          anyElement(contains('Live gap buffer is full')),
+        );
+        await states.seen(
+          2,
+          (WsConnectionState s) => s == WsConnectionState.open,
+        );
+        final conn2 = await server.nextConnection();
+
+        expect(await conn2.nextFrame(), <int>[1, 2, 3, 4, 5]);
+        await _quiet();
+        expect(conn2.frames, hasLength(1));
+        expect(harness.queue.requests, isEmpty);
+      });
+
+      test('a failed HTTPS recovery logs a warning and the session keeps '
+          'working', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          wsOptions: _slowReconnectWsOptions,
+          gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
+        );
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
+        final recovered = _Recorder<LiveTranscriptionResult>(
+          client.recoveredResults,
+        );
+        addTearDown(recovered.dispose);
+        final results = _Recorder<LiveTranscriptionResult>(client.results);
+        addTearDown(results.dispose);
+
+        harness.queue.enqueueError(StateError('recovery transport died'));
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn = await connFuture;
+        await conn.drop();
+        await states.seen(
+          1,
+          (WsConnectionState s) => s == WsConnectionState.reconnecting,
+        );
+        client.sendAudio(<int>[1, 2, 3, 4, 5]);
+        await states.seen(
+          2,
+          (WsConnectionState s) => s == WsConnectionState.open,
+        );
+        final conn2 = await server.nextConnection();
+
+        await _until(
+          () => harness.logger.warns.any(
+            (String message) => message.contains('HTTPS gap recovery failed'),
+          ),
+        );
+        expect(recovered.values, isEmpty);
+        expect(
+          harness.logger.warns,
+          anyElement(contains('transcript for the outage window is lost')),
+        );
+
+        // Live transcription is unaffected by the failed recovery.
+        client.sendAudio(<int>[9]);
+        expect(await conn2.nextFrame(), <int>[9]);
+        conn2.sendText(
+          jsonEncode(
+            _resultsFrame(
+              transcript: 'live after failed recovery',
+              isFinal: true,
+            ),
+          ),
+        );
+        final LiveTranscriptionResult result = await results.next;
+        expect(result.transcript, 'live after failed recovery');
+      });
+
+      test('uninterpretable recovery responses emit nothing', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final harness = _Harness(server);
+        final client = harness.client(
+          wsOptions: _slowReconnectWsOptions,
+          gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
+        );
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
+        final recovered = _Recorder<LiveTranscriptionResult>(
+          client.recoveredResults,
+        );
+        addTearDown(recovered.dispose);
+
+        harness.queue.enqueueJson(<String, dynamic>{'results': 'not-a-map'});
+        harness.queue.enqueueJson(<String, dynamic>{
           'results': <String, dynamic>{'channels': 'not-a-list'},
-        },
-      );
-      harness.queue.enqueueJson(
-        <String, dynamic>{
+        });
+        harness.queue.enqueueJson(<String, dynamic>{
           'results': <String, dynamic>{
             'channels': <Object>[
               'not-a-map',
               <String, dynamic>{'alternatives': <Object>[]},
             ],
           },
+        });
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        var conn = await connFuture;
+        for (var episode = 1; episode <= 3; episode++) {
+          await conn.drop();
+          await states.seen(
+            episode,
+            (WsConnectionState s) => s == WsConnectionState.reconnecting,
+          );
+          client.sendAudio(<int>[1, 2, 3]);
+          await states.seen(
+            episode + 1,
+            (WsConnectionState s) => s == WsConnectionState.open,
+          );
+          conn = await server.nextConnection();
+        }
+        await _until(() => harness.queue.requests.length == 3);
+        await _quiet();
+
+        expect(recovered.values, isEmpty);
+        expect(conn.frames, isEmpty);
+      });
+
+      test(
+        'malformed alternatives inside a recovery response are skipped',
+        () async {
+          final server = await _LoopbackLiveServer.start();
+          addTearDown(server.shutdown);
+          final harness = _Harness(server);
+          final client = harness.client(
+            wsOptions: _slowReconnectWsOptions,
+            gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
+          );
+          addTearDown(client.forceClose);
+          final states = _Recorder<WsConnectionState>(client.connectionStates);
+          addTearDown(states.dispose);
+          final recovered = _Recorder<LiveTranscriptionResult>(
+            client.recoveredResults,
+          );
+          addTearDown(recovered.dispose);
+
+          harness.queue.enqueueJson(<String, dynamic>{
+            'metadata': <String, dynamic>{'request_id': 'req-mixed'},
+            'results': <String, dynamic>{
+              'channels': <Object>[
+                <String, dynamic>{
+                  'alternatives': <Object>[
+                    'broken-entry',
+                    <String, dynamic>{'transcript': 'the good one'},
+                  ],
+                },
+              ],
+            },
+          });
+
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
+          await conn.drop();
+          await states.seen(
+            1,
+            (WsConnectionState s) => s == WsConnectionState.reconnecting,
+          );
+          client.sendAudio(<int>[1, 2, 3, 4]);
+          await states.seen(
+            2,
+            (WsConnectionState s) => s == WsConnectionState.open,
+          );
+          await server.nextConnection();
+
+          final LiveTranscriptionResult event = await recovered.next;
+          expect(event.transcript, 'the good one');
+          expect(event.metadata.requestId, 'req-mixed');
+          expect(event.alternatives, hasLength(1));
         },
       );
 
-      final connFuture = server.nextConnection();
-      await client.start();
-      var conn = await connFuture;
-      for (var episode = 1; episode <= 3; episode++) {
-        await conn.drop();
+      test('a second large gap waits for the in-flight recovery (serialized '
+          'chain)', () async {
+        final server = await _LoopbackLiveServer.start();
+        addTearDown(server.shutdown);
+        final scriptable = _ScriptableHttp();
+        final harness = _Harness(server, httpClient: scriptable);
+        final client = harness.client(
+          wsOptions: _slowReconnectWsOptions,
+          gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
+        );
+        addTearDown(client.forceClose);
+        final states = _Recorder<WsConnectionState>(client.connectionStates);
+        addTearDown(states.dispose);
+        final recovered = _Recorder<LiveTranscriptionResult>(
+          client.recoveredResults,
+        );
+        addTearDown(recovered.dispose);
+
+        final _PendingResponse firstResponse = scriptable.enqueue();
+        final _PendingResponse secondResponse = scriptable.enqueue();
+
+        final connFuture = server.nextConnection();
+        await client.start();
+        final conn1 = await connFuture;
+
+        // Episode 1: large gap -> recovery 1 starts and hangs.
+        await conn1.drop();
         await states.seen(
-          episode,
+          1,
           (WsConnectionState s) => s == WsConnectionState.reconnecting,
         );
         client.sendAudio(<int>[1, 2, 3]);
         await states.seen(
-          episode + 1,
+          2,
           (WsConnectionState s) => s == WsConnectionState.open,
         );
-        conn = await server.nextConnection();
-      }
-      await _until(() => harness.queue.requests.length == 3);
-      await _quiet();
+        final conn2 = await server.nextConnection();
+        await _until(() => scriptable.requests.length == 1);
 
-      expect(recovered.values, isEmpty);
-      expect(conn.frames, isEmpty);
-    });
+        // Episode 2 while recovery 1 is still in flight.
+        await conn2.drop();
+        await states.seen(
+          2,
+          (WsConnectionState s) => s == WsConnectionState.reconnecting,
+        );
+        client.sendAudio(<int>[4, 5, 6]);
+        await states.seen(
+          3,
+          (WsConnectionState s) => s == WsConnectionState.open,
+        );
+        final conn3 = await server.nextConnection();
+        expect(
+          harness.logger.infos,
+          anyElement(contains('already running; the new gap')),
+        );
+        // The queued gap has not been uploaded yet.
+        expect(scriptable.requests, hasLength(1));
 
-    test('malformed alternatives inside a recovery response are skipped',
+        firstResponse.respondJson(_prerecordedBody(<String>['first gap']));
+        final LiveTranscriptionResult first = await recovered.next;
+        expect(first.transcript, 'first gap');
+
+        await _until(() => scriptable.requests.length == 2);
+        secondResponse.respondJson(_prerecordedBody(<String>['second gap']));
+        final LiveTranscriptionResult second = await recovered.next;
+        expect(second.transcript, 'second gap');
+        expect(second.recoveredAtUtc!.isAfter(first.recoveredAtUtc!), isTrue);
+        expect(conn3.frames, isEmpty);
+      });
+
+      test(
+        'recovered results completing after close are dropped silently',
         () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final harness = _Harness(server);
-      final client = harness.client(
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
+          final server = await _LoopbackLiveServer.start();
+          addTearDown(server.shutdown);
+          final scriptable = _ScriptableHttp();
+          final harness = _Harness(server, httpClient: scriptable);
+          final client = harness.client(
+            wsOptions: _slowReconnectWsOptions,
+            gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
+          );
+          final recovered = _Recorder<LiveTranscriptionResult>(
+            client.recoveredResults,
+          );
+          addTearDown(recovered.dispose);
+          final states = _Recorder<WsConnectionState>(client.connectionStates);
+          addTearDown(states.dispose);
 
-      harness.queue.enqueueJson(
-        <String, dynamic>{
-          'metadata': <String, dynamic>{'request_id': 'req-mixed'},
-          'results': <String, dynamic>{
-            'channels': <Object>[
-              <String, dynamic>{
-                'alternatives': <Object>[
-                  'broken-entry',
-                  <String, dynamic>{'transcript': 'the good one'},
-                ],
-              },
-            ],
-          },
+          final _PendingResponse pending = scriptable.enqueue();
+
+          final connFuture = server.nextConnection();
+          await client.start();
+          final conn = await connFuture;
+          await conn.drop();
+          await states.seen(
+            1,
+            (WsConnectionState s) => s == WsConnectionState.reconnecting,
+          );
+          client.sendAudio(<int>[1, 2, 3]);
+          await states.seen(
+            2,
+            (WsConnectionState s) => s == WsConnectionState.open,
+          );
+          await server.nextConnection();
+          await _until(() => scriptable.requests.length == 1);
+
+          // Session torn down while the recovery is still in flight.
+          await client.forceClose();
+          pending.respondJson(_prerecordedBody(<String>['too late']));
+          await _quiet(150);
+
+          expect(recovered.values, isEmpty);
+          expect(
+            harness.logger.infos,
+            anyElement(contains('HTTPS gap recovery complete')),
+          );
+          expect(
+            harness.logger.warns.where(
+              (String message) => message.contains('Failed to interpret'),
+            ),
+            isEmpty,
+          );
         },
       );
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2, 3, 4]);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      await server.nextConnection();
-
-      final LiveTranscriptionResult event = await recovered.next;
-      expect(event.transcript, 'the good one');
-      expect(event.metadata.requestId, 'req-mixed');
-      expect(event.alternatives, hasLength(1));
-    });
-
-    test(
-        'a second large gap waits for the in-flight recovery (serialized '
-        'chain)', () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final scriptable = _ScriptableHttp();
-      final harness = _Harness(server, httpClient: scriptable);
-      final client = harness.client(
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
-      );
-      addTearDown(client.forceClose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
-
-      final _PendingResponse firstResponse = scriptable.enqueue();
-      final _PendingResponse secondResponse = scriptable.enqueue();
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn1 = await connFuture;
-
-      // Episode 1: large gap -> recovery 1 starts and hangs.
-      await conn1.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2, 3]);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      final conn2 = await server.nextConnection();
-      await _until(() => scriptable.requests.length == 1);
-
-      // Episode 2 while recovery 1 is still in flight.
-      await conn2.drop();
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[4, 5, 6]);
-      await states.seen(
-          3, (WsConnectionState s) => s == WsConnectionState.open);
-      final conn3 = await server.nextConnection();
-      expect(
-        harness.logger.infos,
-        anyElement(contains('already running; the new gap')),
-      );
-      // The queued gap has not been uploaded yet.
-      expect(scriptable.requests, hasLength(1));
-
-      firstResponse.respondJson(_prerecordedBody(<String>['first gap']));
-      final LiveTranscriptionResult first = await recovered.next;
-      expect(first.transcript, 'first gap');
-
-      await _until(() => scriptable.requests.length == 2);
-      secondResponse.respondJson(_prerecordedBody(<String>['second gap']));
-      final LiveTranscriptionResult second = await recovered.next;
-      expect(second.transcript, 'second gap');
-      expect(second.recoveredAtUtc!.isAfter(first.recoveredAtUtc!), isTrue);
-      expect(conn3.frames, isEmpty);
-    });
-
-    test('recovered results completing after close are dropped silently',
-        () async {
-      final server = await _LoopbackLiveServer.start();
-      addTearDown(server.shutdown);
-      final scriptable = _ScriptableHttp();
-      final harness = _Harness(server, httpClient: scriptable);
-      final client = harness.client(
-        wsOptions: _slowReconnectWsOptions,
-        gapRecovery: const LiveGapRecoveryOptions(maxLiveFlushBytes: 2),
-      );
-      final recovered = _Recorder<LiveTranscriptionResult>(
-        client.recoveredResults,
-      );
-      addTearDown(recovered.dispose);
-      final states = _Recorder<WsConnectionState>(client.connectionStates);
-      addTearDown(states.dispose);
-
-      final _PendingResponse pending = scriptable.enqueue();
-
-      final connFuture = server.nextConnection();
-      await client.start();
-      final conn = await connFuture;
-      await conn.drop();
-      await states.seen(
-          1, (WsConnectionState s) => s == WsConnectionState.reconnecting);
-      client.sendAudio(<int>[1, 2, 3]);
-      await states.seen(
-          2, (WsConnectionState s) => s == WsConnectionState.open);
-      await server.nextConnection();
-      await _until(() => scriptable.requests.length == 1);
-
-      // Session torn down while the recovery is still in flight.
-      await client.forceClose();
-      pending.respondJson(_prerecordedBody(<String>['too late']));
-      await _quiet(150);
-
-      expect(recovered.values, isEmpty);
-      expect(
-        harness.logger.infos,
-        anyElement(contains('HTTPS gap recovery complete')),
-      );
-      expect(
-        harness.logger.warns
-            .where((String message) => message.contains('Failed to interpret')),
-        isEmpty,
-      );
-    });
-  });
+    },
+  );
 }
 
 bool _retryOnceThenGiveUp(WsCloseContext context) => context.attempt < 2;

@@ -32,9 +32,9 @@ Future<Object> thrownBy(Future<Object?> future) async {
 
 /// Matches the [DeepgramException] the engine throws for a cancelled request.
 Matcher isCancelledWith(String reason) => predicate<DeepgramException>(
-      (error) => error.message == 'Request cancelled: $reason',
-      'a DeepgramException cancelled with reason "$reason"',
-    );
+  (error) => error.message == 'Request cancelled: $reason',
+  'a DeepgramException cancelled with reason "$reason"',
+);
 
 /// An [http.Client] whose requests never complete — used to exercise the
 /// engine's timeout paths deterministically (no sockets involved).
@@ -93,10 +93,7 @@ class CapturingClient extends http.BaseClient {
 }
 
 /// Builds an engine over [client] with [testConfig] (or an override).
-HttpEngine engineWith(
-  http.Client client, {
-  DeepgramConfig? config,
-}) {
+HttpEngine engineWith(http.Client client, {DeepgramConfig? config}) {
   final effective = config ?? testConfig;
   return HttpEngine(
     config: effective,
@@ -218,10 +215,7 @@ void main() {
     test('sends Authorization: Bearer <jwt> for token providers', () async {
       final providerEngine = HttpEngine(
         config: testConfig,
-        auth: DeepgramAuth(
-          testConfig,
-          tokenProvider: () async => 'minted-jwt',
-        ),
+        auth: DeepgramAuth(testConfig, tokenProvider: () async => 'minted-jwt'),
         client: queue,
       );
       queue.enqueueJson({'ok': true});
@@ -325,7 +319,7 @@ void main() {
           {
             'error': {'message': 'm-error-nested'},
           },
-          'm-error-nested'
+          'm-error-nested',
         ),
         ('just plain text', 'HTTP 400.'),
       ];
@@ -368,28 +362,32 @@ void main() {
   });
 
   group('retries and backoff', () {
-    test('429 without Retry-After retries, then surfaces the rate limit',
-        () async {
-      final queue = QueueHttpClient();
-      final engine = engineWith(queue); // maxRetries: 2
+    test(
+      '429 without Retry-After retries, then surfaces the rate limit',
+      () async {
+        final queue = QueueHttpClient();
+        final engine = engineWith(queue); // maxRetries: 2
 
-      for (var i = 0; i < 3; i++) {
-        queue.enqueueJson({'err_msg': 'rate limited'}, status: 429);
-      }
+        for (var i = 0; i < 3; i++) {
+          queue.enqueueJson({'err_msg': 'rate limited'}, status: 429);
+        }
 
-      final error = await thrownBy(engine.getJson('/v1/listen'));
+        final error = await thrownBy(engine.getJson('/v1/listen'));
 
-      expect(error, isA<DeepgramRateLimitException>());
-      final rateLimit = error as DeepgramRateLimitException;
-      expect(rateLimit.retryAfter, isNull);
-      expect(rateLimit.message, 'rate limited');
-      expect(queue.requests, hasLength(3));
-    });
+        expect(error, isA<DeepgramRateLimitException>());
+        final rateLimit = error as DeepgramRateLimitException;
+        expect(rateLimit.retryAfter, isNull);
+        expect(rateLimit.message, 'rate limited');
+        expect(queue.requests, hasLength(3));
+      },
+    );
 
     test('429 with Retry-After fails fast when retries are disabled', () async {
       final queue = QueueHttpClient();
-      final engine =
-          engineWith(queue, config: testConfig.copyWith(maxRetries: 0));
+      final engine = engineWith(
+        queue,
+        config: testConfig.copyWith(maxRetries: 0),
+      );
 
       queue.enqueueJson(
         {'err_msg': 'slow down'},
@@ -433,22 +431,26 @@ void main() {
       expect(queue.requests, hasLength(3));
     });
 
-    test('429 with an unparseable Retry-After yields a null retryAfter',
-        () async {
-      final queue = QueueHttpClient();
-      final engine =
-          engineWith(queue, config: testConfig.copyWith(maxRetries: 0));
+    test(
+      '429 with an unparseable Retry-After yields a null retryAfter',
+      () async {
+        final queue = QueueHttpClient();
+        final engine = engineWith(
+          queue,
+          config: testConfig.copyWith(maxRetries: 0),
+        );
 
-      queue.enqueueJson(
-        {'err_msg': 'slow down'},
-        status: 429,
-        headers: {'retry-after': 'soon-ish'},
-      );
+        queue.enqueueJson(
+          {'err_msg': 'slow down'},
+          status: 429,
+          headers: {'retry-after': 'soon-ish'},
+        );
 
-      final error = await thrownBy(engine.getJson('/v1/listen'));
+        final error = await thrownBy(engine.getJson('/v1/listen'));
 
-      expect((error as DeepgramRateLimitException).retryAfter, isNull);
-    });
+        expect((error as DeepgramRateLimitException).retryAfter, isNull);
+      },
+    );
 
     test('5xx responses are retried and then succeed', () async {
       final queue = QueueHttpClient();
@@ -493,23 +495,25 @@ void main() {
       expect(queue.requests, hasLength(3));
     });
 
-    test('transport failures exhausted -> DeepgramNetworkException with cause',
-        () async {
-      final queue = QueueHttpClient();
-      final engine = engineWith(queue);
+    test(
+      'transport failures exhausted -> DeepgramNetworkException with cause',
+      () async {
+        final queue = QueueHttpClient();
+        final engine = engineWith(queue);
 
-      final cause = http.ClientException('connection reset');
-      for (var i = 0; i < 3; i++) {
-        queue.enqueueError(cause);
-      }
+        final cause = http.ClientException('connection reset');
+        for (var i = 0; i < 3; i++) {
+          queue.enqueueError(cause);
+        }
 
-      final error = await thrownBy(engine.getJson('/v1/listen'));
+        final error = await thrownBy(engine.getJson('/v1/listen'));
 
-      expect(error, isA<DeepgramNetworkException>());
-      final network = error as DeepgramNetworkException;
-      expect(network.cause, same(cause));
-      expect(queue.requests, hasLength(3));
-    });
+        expect(error, isA<DeepgramNetworkException>());
+        final network = error as DeepgramNetworkException;
+        expect(network.cause, same(cause));
+        expect(queue.requests, hasLength(3));
+      },
+    );
 
     test('unexpected client errors propagate unchanged', () async {
       final queue = QueueHttpClient();
@@ -525,8 +529,7 @@ void main() {
   });
 
   group('timeouts', () {
-    test(
-        'getJson times out per attempt, retries, then throws '
+    test('getJson times out per attempt, retries, then throws '
         'DeepgramTimeoutException', () async {
       final client = HangingClient();
       final engine = engineWith(
@@ -629,8 +632,10 @@ void main() {
     });
 
     test('closing an engine that owns its client also works', () async {
-      final engine =
-          HttpEngine(config: testConfig, auth: DeepgramAuth(testConfig));
+      final engine = HttpEngine(
+        config: testConfig,
+        auth: DeepgramAuth(testConfig),
+      );
 
       engine.close();
 
@@ -646,8 +651,9 @@ void main() {
 
       token.cancel('before start');
 
-      final error =
-          await thrownBy(engine.getJson('/v1/listen', cancelToken: token));
+      final error = await thrownBy(
+        engine.getJson('/v1/listen', cancelToken: token),
+      );
 
       expect(error, isCancelledWith('before start'));
       expect(queue.requests, isEmpty);
@@ -767,29 +773,31 @@ void main() {
   });
 
   group('postAudio', () {
-    test('sends the raw audio bytes with content type and auth headers',
-        () async {
-      final client = CapturingClient();
-      final engine = engineWith(client);
+    test(
+      'sends the raw audio bytes with content type and auth headers',
+      () async {
+        final client = CapturingClient();
+        final engine = engineWith(client);
 
-      final result = await engine.postAudio(
-        '/v1/listen',
-        audio: <int>[10, 20, 30, 40],
-        contentType: 'audio/wav',
-        query: {'model': 'nova-3'},
-        headers: {'X-Deepgram-Client': 'test'},
-      );
+        final result = await engine.postAudio(
+          '/v1/listen',
+          audio: <int>[10, 20, 30, 40],
+          contentType: 'audio/wav',
+          query: {'model': 'nova-3'},
+          headers: {'X-Deepgram-Client': 'test'},
+        );
 
-      final request = client.requests.single;
-      expect(request.method, 'POST');
-      expect(request.bodyBytes, <int>[10, 20, 30, 40]);
-      expect(request.headers['Content-Type'], 'audio/wav');
-      expect(request.headers['Authorization'], 'Token test-api-key');
-      expect(request.headers['X-Deepgram-Client'], 'test');
-      expect(request.url.queryParameters['model'], 'nova-3');
-      // The canned 200 response carries a non-JSON body; decoding yields {}.
-      expect(result.body, isEmpty);
-    });
+        final request = client.requests.single;
+        expect(request.method, 'POST');
+        expect(request.bodyBytes, <int>[10, 20, 30, 40]);
+        expect(request.headers['Content-Type'], 'audio/wav');
+        expect(request.headers['Authorization'], 'Token test-api-key');
+        expect(request.headers['X-Deepgram-Client'], 'test');
+        expect(request.url.queryParameters['model'], 'nova-3');
+        // The canned 200 response carries a non-JSON body; decoding yields {}.
+        expect(result.body, isEmpty);
+      },
+    );
 
     test('decodes a JSON transcription response and its request id', () async {
       final queue = QueueHttpClient();
@@ -850,8 +858,10 @@ void main() {
     test('postForBytes collects the whole stream', () async {
       queue.enqueueBytes(<int>[9, 8, 7]);
 
-      final bytes =
-          await engine.postForBytes('/v1/speak', body: {'text': 'hi'});
+      final bytes = await engine.postForBytes(
+        '/v1/speak',
+        body: {'text': 'hi'},
+      );
 
       expect(bytes, <int>[9, 8, 7]);
     });
@@ -924,8 +934,10 @@ void main() {
       queue.enqueueError(http.ClientException('connection reset'));
       queue.enqueueBytes(<int>[6, 7]);
 
-      final bytes =
-          await engine.postForBytes('/v1/speak', body: {'text': 'hi'});
+      final bytes = await engine.postForBytes(
+        '/v1/speak',
+        body: {'text': 'hi'},
+      );
 
       // The first attempt failed with a transport error, so receiving the
       // queued bytes at all proves the retry happened. (The queue client
@@ -963,8 +975,10 @@ void main() {
       queue.enqueueBytes(<int>[1, 2, 3]);
 
       final token = HttpCancelToken();
-      final stream =
-          await engine.postForByteStream('/v1/speak', cancelToken: token);
+      final stream = await engine.postForByteStream(
+        '/v1/speak',
+        cancelToken: token,
+      );
 
       token.cancel('enough audio');
 

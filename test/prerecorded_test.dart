@@ -232,8 +232,9 @@ void main() {
         containsPair('detect_language', 'fr'),
       );
       expect(
-        const PrerecordedOptions(detectLanguage: <String>['en', 'fr'])
-            .toQuery(),
+        const PrerecordedOptions(
+          detectLanguage: <String>['en', 'fr'],
+        ).toQuery(),
         containsPair('detect_language', <String>['en', 'fr']),
       );
       expect(
@@ -244,9 +245,7 @@ void main() {
 
     test('summarize v1 sends a plain boolean', () {
       expect(
-        const PrerecordedOptions(
-          summarize: SummarizeOptions(),
-        ).toQuery(),
+        const PrerecordedOptions(summarize: SummarizeOptions()).toQuery(),
         equals(const <String, dynamic>{'summarize': 'true'}),
       );
     });
@@ -325,9 +324,7 @@ void main() {
     test('SummarizeOptions.audioType wins over summarizeAudioType', () {
       expect(
         const PrerecordedOptions(
-          summarize: SummarizeOptions(
-            audioType: SummarizeAudioType.podcast,
-          ),
+          summarize: SummarizeOptions(audioType: SummarizeAudioType.podcast),
           summarizeAudioType: 'meeting',
         ).toQuery(),
         containsPair('summarize_audio_type', 'podcast'),
@@ -346,8 +343,9 @@ void main() {
 
     test('timeout is truncated to whole seconds', () {
       expect(
-        const PrerecordedOptions(timeout: Duration(milliseconds: 2500))
-            .toQuery(),
+        const PrerecordedOptions(
+          timeout: Duration(milliseconds: 2500),
+        ).toQuery(),
         containsPair('timeout', 2),
       );
       expect(
@@ -400,8 +398,11 @@ void main() {
       ];
       expect(models, isNotEmpty);
       expect(models, contains('nova-3'));
-      expect(models.toSet(), hasLength(models.length),
-          reason: 'model ids must not contain duplicates');
+      expect(
+        models.toSet(),
+        hasLength(models.length),
+        reason: 'model ids must not contain duplicates',
+      );
       for (final model in models) {
         expect(model, isNotEmpty);
         expect(model, isNot(contains(' ')));
@@ -439,8 +440,9 @@ void main() {
       );
       queue.enqueueJson(okResponse);
 
-      final result =
-          await client.transcribeFromUrl('https://dpgr.am/spacewalk.wav');
+      final result = await client.transcribeFromUrl(
+        'https://dpgr.am/spacewalk.wav',
+      );
 
       final request = queue.requests.single;
       expect(request.method, 'POST');
@@ -473,8 +475,9 @@ void main() {
         ),
         config: testConfig,
       );
-      queue.enqueueJson(
-          const <String, dynamic>{'metadata': <String, dynamic>{}});
+      queue.enqueueJson(const <String, dynamic>{
+        'metadata': <String, dynamic>{},
+      });
 
       await client.transcribeFromUrl(
         'https://example.com/a.wav',
@@ -490,10 +493,7 @@ void main() {
         expect(params[key], value, reason: 'wire param $key');
       });
       expect(params['url'], <String>['https://example.com/a.wav']);
-      expect(
-        params.keys,
-        unorderedEquals(<String>[...expected.keys, 'url']),
-      );
+      expect(params.keys, unorderedEquals(<String>[...expected.keys, 'url']));
       // Nothing was set that should not be on the wire.
       expect(params.containsKey('smart_format'), isFalse);
     });
@@ -508,8 +508,9 @@ void main() {
         ),
         config: testConfig,
       );
-      queue.enqueueJson(
-          const <String, dynamic>{'metadata': <String, dynamic>{}});
+      queue.enqueueJson(const <String, dynamic>{
+        'metadata': <String, dynamic>{},
+      });
 
       await client.transcribeFromUrl(
         'https://example.com/a.wav',
@@ -532,8 +533,9 @@ void main() {
       );
       queue.enqueueJson(const <String, dynamic>{'request_id': 'cb-77'});
 
-      final result =
-          await client.transcribeFromUrl('https://example.com/a.wav');
+      final result = await client.transcribeFromUrl(
+        'https://example.com/a.wav',
+      );
       expect(result.requestId, 'cb-77');
       expect(result.channels, isEmpty);
     });
@@ -550,8 +552,9 @@ void main() {
       );
       queue.enqueueJson('');
 
-      final result =
-          await client.transcribeFromUrl('https://example.com/a.wav');
+      final result = await client.transcribeFromUrl(
+        'https://example.com/a.wav',
+      );
       expect(result.requestId, isNull);
       expect(result.channels, isEmpty);
     });
@@ -721,39 +724,43 @@ void main() {
       );
 
       expect(recording.calls, hasLength(1));
-      expect(recording.calls.single.bodyBytes,
-          hasLength(1024 * 1024 + 512 * 1024));
+      expect(
+        recording.calls.single.bodyBytes,
+        hasLength(1024 * 1024 + 512 * 1024),
+      );
       expect(result.requestId, 'req-ok');
     });
 
-    test('small payloads keep the base timeout and retry into a typed error',
-        () async {
-      const baseConfig = DeepgramConfig(
-        apiKey: 'test-api-key',
-        requestTimeout: Duration(milliseconds: 40),
-        maxRetries: 2,
-        retryBaseDelay: Duration(milliseconds: 1),
-        retryMaxDelay: Duration(milliseconds: 5),
-      );
-      final recording = _RecordingClient(
-        delay: const Duration(milliseconds: 250),
-      );
-      final client = PrerecordedClient(
-        http: HttpEngine(
+    test(
+      'small payloads keep the base timeout and retry into a typed error',
+      () async {
+        const baseConfig = DeepgramConfig(
+          apiKey: 'test-api-key',
+          requestTimeout: Duration(milliseconds: 40),
+          maxRetries: 2,
+          retryBaseDelay: Duration(milliseconds: 1),
+          retryMaxDelay: Duration(milliseconds: 5),
+        );
+        final recording = _RecordingClient(
+          delay: const Duration(milliseconds: 250),
+        );
+        final client = PrerecordedClient(
+          http: HttpEngine(
+            config: baseConfig,
+            auth: DeepgramAuth(baseConfig),
+            client: recording,
+          ),
           config: baseConfig,
-          auth: DeepgramAuth(baseConfig),
-          client: recording,
-        ),
-        config: baseConfig,
-      );
+        );
 
-      await expectLater(
-        client.transcribeBytes(<int>[1, 2, 3]),
-        throwsA(isA<DeepgramTimeoutException>()),
-      );
-      // One initial attempt plus maxRetries retries.
-      expect(recording.calls, hasLength(3));
-    });
+        await expectLater(
+          client.transcribeBytes(<int>[1, 2, 3]),
+          throwsA(isA<DeepgramTimeoutException>()),
+        );
+        // One initial attempt plus maxRetries retries.
+        expect(recording.calls, hasLength(3));
+      },
+    );
   });
 
   group('cancellation', () {
@@ -770,10 +777,17 @@ void main() {
       final token = HttpCancelToken()..cancel('stop it');
 
       await expectLater(
-        client.transcribeFromUrl('https://example.com/a.wav',
-            cancelToken: token),
-        throwsA(isA<DeepgramException>()
-            .having((e) => e.message, 'message', contains('stop it'))),
+        client.transcribeFromUrl(
+          'https://example.com/a.wav',
+          cancelToken: token,
+        ),
+        throwsA(
+          isA<DeepgramException>().having(
+            (e) => e.message,
+            'message',
+            contains('stop it'),
+          ),
+        ),
       );
       expect(token.isCancelled, isTrue);
       expect(token.reason, 'stop it');
@@ -798,16 +812,23 @@ void main() {
       );
       final token = HttpCancelToken();
       unawaited(
-        Future<void>.delayed(const Duration(milliseconds: 30)).then(
-          (_) => token.cancel('aborted mid-backoff'),
-        ),
+        Future<void>.delayed(
+          const Duration(milliseconds: 30),
+        ).then((_) => token.cancel('aborted mid-backoff')),
       );
 
       await expectLater(
-        client.transcribeFromUrl('https://example.com/a.wav',
-            cancelToken: token),
-        throwsA(isA<DeepgramException>()
-            .having((e) => e.message, 'message', contains('aborted'))),
+        client.transcribeFromUrl(
+          'https://example.com/a.wav',
+          cancelToken: token,
+        ),
+        throwsA(
+          isA<DeepgramException>().having(
+            (e) => e.message,
+            'message',
+            contains('aborted'),
+          ),
+        ),
       );
       // Only the first, throttled attempt was made.
       expect(queue.requests, hasLength(1));
@@ -825,68 +846,71 @@ void main() {
         ),
         config: testConfig,
       );
-      queue.enqueueJson(
-        const <String, dynamic>{
-          'err_msg': 'Invalid API key',
-          'request_id': 'req-401',
-          'err_code': 'AUTH_INVALID',
-        },
-        status: 401,
-      );
+      queue.enqueueJson(const <String, dynamic>{
+        'err_msg': 'Invalid API key',
+        'request_id': 'req-401',
+        'err_code': 'AUTH_INVALID',
+      }, status: 401);
 
       await expectLater(
         client.transcribeFromUrl('https://example.com/a.wav'),
-        throwsA(isA<DeepgramAuthException>()
-            .having((e) => e.message, 'message', 'Invalid API key')
-            .having((e) => e.requestId, 'requestId', 'req-401')
-            .having((e) => e.code, 'code', 'AUTH_INVALID')),
+        throwsA(
+          isA<DeepgramAuthException>()
+              .having((e) => e.message, 'message', 'Invalid API key')
+              .having((e) => e.requestId, 'requestId', 'req-401')
+              .having((e) => e.code, 'code', 'AUTH_INVALID'),
+        ),
       );
       // Auth errors are never retried.
       expect(queue.requests, hasLength(1));
     });
 
-    test('429 with Retry-After retries, then throws DeepgramRateLimitException',
-        () async {
-      final queue = QueueHttpClient();
-      final client = PrerecordedClient(
-        http: HttpEngine(
+    test(
+      '429 with Retry-After retries, then throws DeepgramRateLimitException',
+      () async {
+        final queue = QueueHttpClient();
+        final client = PrerecordedClient(
+          http: HttpEngine(
+            config: testConfig,
+            auth: DeepgramAuth(testConfig),
+            client: queue,
+          ),
           config: testConfig,
-          auth: DeepgramAuth(testConfig),
-          client: queue,
-        ),
-        config: testConfig,
-      );
-      // Two immediately-retryable throttles, then a final one that carries
-      // the Retry-After surfaced on the exception.
-      queue.enqueueJson(
-        const <String, dynamic>{'err_msg': 'Throttled.'},
-        status: 429,
-        headers: <String, String>{'retry-after': '0'},
-      );
-      queue.enqueueJson(
-        const <String, dynamic>{'err_msg': 'Throttled.'},
-        status: 429,
-        headers: <String, String>{'retry-after': '0'},
-      );
-      queue.enqueueJson(
-        const <String, dynamic>{'err_msg': 'Still throttled.'},
-        status: 429,
-        headers: <String, String>{'retry-after': '2'},
-      );
+        );
+        // Two immediately-retryable throttles, then a final one that carries
+        // the Retry-After surfaced on the exception.
+        queue.enqueueJson(
+          const <String, dynamic>{'err_msg': 'Throttled.'},
+          status: 429,
+          headers: <String, String>{'retry-after': '0'},
+        );
+        queue.enqueueJson(
+          const <String, dynamic>{'err_msg': 'Throttled.'},
+          status: 429,
+          headers: <String, String>{'retry-after': '0'},
+        );
+        queue.enqueueJson(
+          const <String, dynamic>{'err_msg': 'Still throttled.'},
+          status: 429,
+          headers: <String, String>{'retry-after': '2'},
+        );
 
-      await expectLater(
-        client.transcribeFromUrl('https://example.com/a.wav'),
-        throwsA(isA<DeepgramRateLimitException>()
-            .having((e) => e.message, 'message', 'Still throttled.')
-            .having(
-              (e) => e.retryAfter,
-              'retryAfter',
-              const Duration(seconds: 2),
-            )),
-      );
-      // One initial attempt plus maxRetries (2) retries.
-      expect(queue.requests, hasLength(3));
-    });
+        await expectLater(
+          client.transcribeFromUrl('https://example.com/a.wav'),
+          throwsA(
+            isA<DeepgramRateLimitException>()
+                .having((e) => e.message, 'message', 'Still throttled.')
+                .having(
+                  (e) => e.retryAfter,
+                  'retryAfter',
+                  const Duration(seconds: 2),
+                ),
+          ),
+        );
+        // One initial attempt plus maxRetries (2) retries.
+        expect(queue.requests, hasLength(3));
+      },
+    );
 
     test('a single 429 is retried transparently', () async {
       final queue = QueueHttpClient();
@@ -905,66 +929,71 @@ void main() {
       );
       queue.enqueueJson(okResponse);
 
-      final result =
-          await client.transcribeFromUrl('https://example.com/a.wav');
+      final result = await client.transcribeFromUrl(
+        'https://example.com/a.wav',
+      );
 
       expect(result.requestId, 'req-ok');
       expect(queue.requests, hasLength(2));
     });
 
-    test('404 maps to DeepgramNotFoundException with the header request id',
-        () async {
-      final queue = QueueHttpClient();
-      final client = PrerecordedClient(
-        http: HttpEngine(
+    test(
+      '404 maps to DeepgramNotFoundException with the header request id',
+      () async {
+        final queue = QueueHttpClient();
+        final client = PrerecordedClient(
+          http: HttpEngine(
+            config: testConfig,
+            auth: DeepgramAuth(testConfig),
+            client: queue,
+          ),
           config: testConfig,
-          auth: DeepgramAuth(testConfig),
-          client: queue,
-        ),
-        config: testConfig,
-      );
-      queue.enqueueJson(
-        'Not Found',
-        status: 404,
-        headers: <String, String>{'x-request-id': 'hdr-404'},
-      );
+        );
+        queue.enqueueJson(
+          'Not Found',
+          status: 404,
+          headers: <String, String>{'x-request-id': 'hdr-404'},
+        );
 
-      await expectLater(
-        client.transcribeFromUrl('https://example.com/missing.wav'),
-        throwsA(isA<DeepgramNotFoundException>()
-            .having((e) => e.message, 'message', 'HTTP 404.')
-            .having((e) => e.requestId, 'requestId', 'hdr-404')),
-      );
-      expect(queue.requests, hasLength(1));
-    });
+        await expectLater(
+          client.transcribeFromUrl('https://example.com/missing.wav'),
+          throwsA(
+            isA<DeepgramNotFoundException>()
+                .having((e) => e.message, 'message', 'HTTP 404.')
+                .having((e) => e.requestId, 'requestId', 'hdr-404'),
+          ),
+        );
+        expect(queue.requests, hasLength(1));
+      },
+    );
 
-    test('transport failures retry, then throw DeepgramNetworkException',
-        () async {
-      final queue = QueueHttpClient();
-      final client = PrerecordedClient(
-        http: HttpEngine(
+    test(
+      'transport failures retry, then throw DeepgramNetworkException',
+      () async {
+        final queue = QueueHttpClient();
+        final client = PrerecordedClient(
+          http: HttpEngine(
+            config: testConfig,
+            auth: DeepgramAuth(testConfig),
+            client: queue,
+          ),
           config: testConfig,
-          auth: DeepgramAuth(testConfig),
-          client: queue,
-        ),
-        config: testConfig,
-      );
-      queue.enqueueError(http.ClientException('connection refused'));
-      queue.enqueueError(http.ClientException('connection refused'));
-      queue.enqueueError(http.ClientException('connection refused'));
+        );
+        queue.enqueueError(http.ClientException('connection refused'));
+        queue.enqueueError(http.ClientException('connection refused'));
+        queue.enqueueError(http.ClientException('connection refused'));
 
-      await expectLater(
-        client.transcribeFromUrl('https://example.com/a.wav'),
-        throwsA(isA<DeepgramNetworkException>()
-            .having((e) => e.message, 'message', 'HTTP transport failure.')
-            .having(
-              (e) => e.cause,
-              'cause',
-              isA<http.ClientException>(),
-            )),
-      );
-      expect(queue.requests, hasLength(3));
-    });
+        await expectLater(
+          client.transcribeFromUrl('https://example.com/a.wav'),
+          throwsA(
+            isA<DeepgramNetworkException>()
+                .having((e) => e.message, 'message', 'HTTP transport failure.')
+                .having((e) => e.cause, 'cause', isA<http.ClientException>()),
+          ),
+        );
+        expect(queue.requests, hasLength(3));
+      },
+    );
 
     test('500 retries, then throws DeepgramServerException', () async {
       final queue = QueueHttpClient();
@@ -977,16 +1006,20 @@ void main() {
         config: testConfig,
       );
       for (var i = 0; i < 3; i++) {
-        queue.enqueueJson(
-          const <String, dynamic>{'err_msg': 'Internal error.'},
-          status: 500,
-        );
+        queue.enqueueJson(const <String, dynamic>{
+          'err_msg': 'Internal error.',
+        }, status: 500);
       }
 
       await expectLater(
         client.transcribeFromUrl('https://example.com/a.wav'),
-        throwsA(isA<DeepgramServerException>()
-            .having((e) => e.message, 'message', 'Internal error.')),
+        throwsA(
+          isA<DeepgramServerException>().having(
+            (e) => e.message,
+            'message',
+            'Internal error.',
+          ),
+        ),
       );
       expect(queue.requests, hasLength(3));
     });
@@ -1001,15 +1034,19 @@ void main() {
         ),
         config: testConfig,
       );
-      queue.enqueueJson(
-        const <String, dynamic>{'err_msg': 'Invalid parameter.'},
-        status: 400,
-      );
+      queue.enqueueJson(const <String, dynamic>{
+        'err_msg': 'Invalid parameter.',
+      }, status: 400);
 
       await expectLater(
         client.transcribeFromUrl('https://example.com/a.wav'),
-        throwsA(isA<DeepgramBadRequestException>()
-            .having((e) => e.message, 'message', 'Invalid parameter.')),
+        throwsA(
+          isA<DeepgramBadRequestException>().having(
+            (e) => e.message,
+            'message',
+            'Invalid parameter.',
+          ),
+        ),
       );
       expect(queue.requests, hasLength(1));
     });
@@ -1034,12 +1071,7 @@ String? _headerOf(Map<String, String> headers, String name) {
 
 /// One HTTP call captured by [_RecordingClient].
 class _RecordedCall {
-  const _RecordedCall(
-    this.method,
-    this.url,
-    this.headers,
-    this.bodyBytes,
-  );
+  const _RecordedCall(this.method, this.url, this.headers, this.bodyBytes);
 
   final String method;
   final Uri url;
