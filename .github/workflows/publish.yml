@@ -1,36 +1,6 @@
 # Automated publishing to pub.dev via GitHub Actions OIDC ("trusted
 # publishing"). No long-lived secrets are involved: pub.dev verifies a
 # short-lived OIDC token minted by GitHub for this exact workflow run.
-#
-# ---------------------------------------------------------------------------
-# ONE-TIME SETUP the maintainer must do BEFORE this workflow can succeed:
-#
-# 1. Publish the FIRST version MANUALLY. Verified from
-#    https://dart.dev/tools/pub/automated-publishing: automated publishing
-#    only works for packages that already exist on pub.dev — "To create a new
-#    package, you must publish the first version using dart pub publish."
-#    Follow doc/PUBLISHING.md for the manual first publish (dart login +
-#    dart pub publish as the uploader / publisher member).
-#
-# 2. Enable the integration on pub.dev: go to the package page on pub.dev →
-#    "Admin" tab → "Automated publishing" section → "Enable publishing from
-#    GitHub Actions", and fill in:
-#      - repository: bilalahmed24/flutter_deepgram
-#      - tag pattern: v{{version}}
-#    (You must be an uploader of the package or an admin of its publisher.)
-#
-# 3. Create the `pub-dev` GitHub environment referenced below: repo Settings →
-#    Environments → New environment → "pub-dev". This is optional hygiene —
-#    it lets you add required reviewers so every release needs a human click,
-#    and it shows up as a deployment on each release.
-#
-# 4. After that, every release is: bump `version:` in pubspec.yaml, update
-#    CHANGELOG.md, push to main, then `git tag vX.Y.Z && git push origin
-#    vX.Y.Z`. The pubspec version MUST match the tag (tag pattern v{{version}}).
-#
-# pub.dev only accepts publishes triggered by a pushed tag that matches the
-# configured pattern; pushes of branches never publish anything.
-# ---------------------------------------------------------------------------
 
 name: Publish to pub.dev
 
