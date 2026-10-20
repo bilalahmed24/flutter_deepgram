@@ -50,7 +50,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_deepgram: ^1.0.0
+  flutter_deepgram: ^1.0.2
 ```
 
 Then import it:
