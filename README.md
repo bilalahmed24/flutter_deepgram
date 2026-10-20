@@ -1,4 +1,4 @@
-# flutter_deepgram
+# Flutter Deepgram
 
 A complete, production-grade Deepgram SDK for Dart and Flutter — speech-to-text, text-to-speech, voice agents and text intelligence, all on resilient, auto-reconnecting WebSocket sessions.
 
@@ -23,7 +23,7 @@ The package is 100% pure Dart (no platform channels, no native code). Every Deep
 | macOS / Windows / Linux | Any Flutter desktop target | Uses `dart:io` WebSockets |
 | Pure Dart (server/CLI) | Dart 3.3+ | No Flutter dependency at all |
 
-Because the SDK is transport-only (you feed it audio, it returns transcripts and speech bytes), microphone/speaker access and their permissions stay in your app — pair it with any recorder/player plugin you like.
+Because the SDK is transport-only (you feed it audio, it returns transcripts and speech bytes), microphone/speaker access and their permissions stay in your app. We recommend using [mic_recorder](https://pub.dev/packages/mic_recorder).
 
 ## Features
 
